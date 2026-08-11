@@ -18,6 +18,7 @@ El yapımı deri eşyaların (çanta, cüzdan, aksesuar) sergilendiği minimalis
 - Minimalist, siyah tema
 - Büyük görsel odaklı düzen
 - Beyaz/gri tipografi ve sade, premium his veren yerleşim
+- Özel marka fontu (`next/font/local` ile self-hosted, `--font-custom` → varsayılan `font-sans`)
 
 ## Mevcut Durum
 
@@ -26,16 +27,19 @@ El yapımı deri eşyaların (çanta, cüzdan, aksesuar) sergilendiği minimalis
 - [x] Header bileşeni `src/app/layout.tsx` içine eklendi
 - [x] Mobil menü (drawer) kuruldu — hamburger ikonuyla açılan tam ekran slide-in panel (`src/components/MobileMenu.tsx`), cinsiyet switcher'ı, alt kategori listesi ve alt aksiyonlar
 - [x] Header responsive düzeltmesi: logo `LOGO` olarak kısaltıldı; mobilde (<md) yalnızca hamburger + logo + sepet/wishlist görünür, sekmeler/arama/alt kategori linkleri gizli
+- [x] Özel marka fontu entegrasyonu tamamlandı — `next/font/local` ile `src/app/fonts/custom-brand-font.woff2` yüklendi (`--font-custom`), Tailwind `font-sans` eşlemesiyle tüm sitede varsayılan font yapıldı
 - [x] Ana sayfaya **ÖZEL KOLEKSİYON** ürün vitrini eklendi — mobilde yatay kaydırmalı şerit, sm+ ızgara; kartlar görsel + başlık + fiyat (indirimde üstü çizili eski fiyat)
-
-### Değişiklik Kaydı
-
-- **Header responsive düzeltmesi:** `LOGO PLACEHOLDER` metni `LOGO` olarak kısaltıldı (taşma/komşu eleman itmesi önlendi). Mobil (<md) üst barda yalnızca hamburger (sol), `LOGO` (orta) ve sepet/wishlist ikonları (sağ) kalıyor; KADIN/ERKEK/UNISEX sekmeleri, arama çubuğu ve alt kategori linkleri tamamen gizlendi. Üst bar mobilde `flex justify-between items-center w-full`, masaüstünde (md+) 3 sütunlu grid olarak çalışıyor; hamburger yalnızca mobilde (`md:hidden`). Hesabım ikonu ve alt bar da yalnızca md+ görünür.
-
-- **Mobil menü ve vitrin eklendi:** Header `"use client"` yapıldı; mobilde hamburger ikonu `useState` ile açılan drawer'ı tetikliyor (`MobileMenu.tsx`: üstte KADIN/ERKEK/UNISEX switcher, ortada dikey kategori listesi — alt menüsü olacak satırlarda `>` işareti — altta Oturum Aç / İstek Listem; Escape, kapatma butonu ve arka plan tıklamasıyla kapanır). Ana sayfada Hero'nun altına ÖZEL KOLEKSİYON vitrini (snap'lı yatay kaydırma + masaüstü ızgarası) eklendi.
 
 ## Yapılacaklar (TODO)
 
 - [ ] Ürün tipi (`Product` interface) ve örnek veri seti (`mockProducts`) tanımlanması (`src/types`, `src/data`) ve vitrinin gerçek verilere bağlanması
 - [ ] Footer bileşeninin yazılması
-- [ ] Gerçek görseller, fontlar ve logonun eklenmesi
+- [ ] Gerçek görseller ve logonun eklenmesi
+
+## Değişiklik Kaydı
+
+- **Marka fontu eklendi:** `next/font/google` (Geist) kaldırıldı; yerine `next/font/local` ile `src/app/fonts/custom-brand-font.woff2` yüklendi (`variable: "--font-custom"`, `body` className'ine enjekte edildi). Tailwind v4 CSS-first yapılandırmasıyla `globals.css` içindeki `@theme inline { --font-sans: var(--font-custom, …) }` eşlemesi sayesinde `font-sans` utility'si ve varsayılan site fontu marka fontu oldu (tailwind.config dosyası gerekmedi — proje Tailwind v4 kullanıyor).
+
+- **Header responsive düzeltmesi:** `LOGO PLACEHOLDER` metni `LOGO` olarak kısaltıldı (taşma/komşu eleman itmesi önlendi). Mobil (<md) üst barda yalnızca hamburger (sol), `LOGO` (orta) ve sepet/wishlist ikonları (sağ) kalıyor; KADIN/ERKEK/UNISEX sekmeleri, arama çubuğu ve alt kategori linkleri tamamen gizlendi. Üst bar mobilde `flex justify-between items-center w-full`, masaüstünde (md+) 3 sütunlu grid olarak çalışıyor; hamburger yalnızca mobilde (`md:hidden`). Hesabım ikonu ve alt bar da yalnızca md+ görünür.
+
+- **Mobil menü ve vitrin eklendi:** Header `"use client"` yapıldı; mobilde hamburger ikonu `useState` ile açılan drawer'ı tetikliyor (`MobileMenu.tsx`: üstte KADIN/ERKEK/UNISEX switcher, ortada dikey kategori listesi — alt menüsü olacak satırlarda `>` işareti — altta Oturum Aç / İstek Listem; Escape, kapatma butonu ve arka plan tıklamasıyla kapanır). Ana sayfada Hero'nun altına ÖZEL KOLEKSİYON vitrini (snap'lı yatay kaydırma + masaüstü ızgarası) eklendi.
