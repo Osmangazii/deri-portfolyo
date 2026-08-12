@@ -1,4 +1,6 @@
 import Link from "next/link";
+import ProductCard from "@/components/ProductCard";
+import { MOCK_PRODUCTS } from "@/data/products";
 
 type Category = {
   name: string;
@@ -9,22 +11,6 @@ const CATEGORIES: Category[] = [
   { name: "GIYIM", href: "/urunler/giyim" },
   { name: "AKSESUAR", href: "/urunler/aksesuar" },
   { name: "ÇANTA", href: "/urunler/canta" },
-];
-
-type ShowcaseProduct = {
-  id: number;
-  title: string;
-  price: string;
-  oldPrice?: string;
-};
-
-const SHOWCASE_PRODUCTS: ShowcaseProduct[] = [
-  { id: 1, title: "Deri Omuz Çantası", price: "₺4.200", oldPrice: "₺5.400" },
-  { id: 2, title: "El Dikişi Cüzdan", price: "₺1.850" },
-  { id: 3, title: "Keten Astarlı Sırt Çantası", price: "₺6.900", oldPrice: "₺7.800" },
-  { id: 4, title: "Deri Kemer", price: "₺1.450" },
-  { id: 5, title: "Kartlık", price: "₺950", oldPrice: "₺1.200" },
-  { id: 6, title: "Laptop Kılıfı", price: "₺2.400" },
 ];
 
 export default function Home() {
@@ -89,10 +75,12 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Mobilde yatay kaydırma, sm+ ızgara */}
-          <ul className="flex snap-x gap-4 overflow-x-auto pb-4 scrollbar-none sm:grid sm:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 lg:grid-cols-4">
-            {SHOWCASE_PRODUCTS.map((product) => (
-              <ProductCard key={product.id} product={product} />
+          {/* Ürün ızgarası: 1 → 2 → 4 sütun */}
+          <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {MOCK_PRODUCTS.map((product) => (
+              <li key={product.id}>
+                <ProductCard product={product} />
+              </li>
             ))}
           </ul>
         </div>
@@ -125,34 +113,6 @@ export default function Home() {
         </div>
       </section>
     </main>
-  );
-}
-
-function ProductCard({ product }: { product: ShowcaseProduct }) {
-  return (
-    <li className="w-64 shrink-0 snap-start sm:w-auto">
-      <Link href={`/urunler/${product.id}`} className="group block">
-        {/* Görsel alanı */}
-        <div className="relative aspect-3/4 w-full overflow-hidden bg-linear-to-br from-neutral-800 to-neutral-950">
-          <span className="absolute inset-0 flex items-center justify-center text-[0.6rem] font-medium uppercase tracking-[0.3em] text-neutral-600">
-            Görsel
-          </span>
-        </div>
-        {/* Başlık */}
-        <h3 className="mt-3 truncate text-sm font-medium text-neutral-100">
-          {product.title}
-        </h3>
-        {/* Fiyat (indirimliyse eski fiyat üstü çizili) */}
-        <p className="mt-1 flex items-baseline gap-2 text-sm">
-          <span className="text-neutral-100">{product.price}</span>
-          {product.oldPrice && (
-            <span className="text-xs text-neutral-500 line-through">
-              {product.oldPrice}
-            </span>
-          )}
-        </p>
-      </Link>
-    </li>
   );
 }
 
