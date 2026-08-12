@@ -18,7 +18,7 @@ const CATEGORIES: Category[] = [
 export default function Home() {
   return (
     <main className="flex flex-1 flex-col">
-      {/* Hero: tam ekran */}
+      {/* Hero: baskın sola hizalı tipografi */}
       <section className="relative h-svh w-full overflow-hidden">
         <Image
           src="/images/hero/photo-1711915506137-dd9e9b3488a1.avif"
@@ -26,23 +26,32 @@ export default function Home() {
           fill
           priority
           sizes="100vw"
-          className="object-cover"
+          className="object-cover object-center"
         />
-        {/* Karartma gradyanı — metin ve navigasyon okunabilirliği için */}
-        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/25 to-black/40" />
+        {/* Vinyet karartma — beyaz metin okunabilirliği için */}
+        <div className="absolute inset-0 bg-linear-to-r from-black/70 via-black/35 to-black/45" />
 
-        {/* İçerik */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-          <p className="text-xs font-medium uppercase tracking-[0.4em] text-neutral-300">
-            El Yapımı Deri Eşyalar
+        {/* İçerik: solda hizalanmış dev tipografi */}
+        <div className="absolute top-1/2 left-[5%] w-[90%] -translate-y-1/2 text-left sm:left-[7%]">
+          <p className="text-sm font-light uppercase tracking-[0.35em] text-neutral-400">
+            YENİ SEZON — 2026
           </p>
-          <h1 className="mt-6 max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-white sm:text-6xl lg:text-7xl">
-            EL YAPIMI DERİ KOLEKSİYONU
+          <h1 className="mt-4 text-8xl font-extrabold leading-none tracking-tight text-white md:text-[12rem]">
+            LOGO
           </h1>
-          <p className="mt-6 max-w-xl text-base leading-relaxed text-neutral-300 sm:text-lg">
-            Zamana meydan okuyan zanaat.
+          <p className="mb-10 mt-6 max-w-lg text-base leading-relaxed text-neutral-200">
+            Elde dikilen çanta, cüzdan ve aksesuarlar. Her parça, yıllar içinde
+            size eşlik eden gerçek deriden üretilir.
           </p>
-          <HeroCta />
+          <div className="flex flex-wrap items-center gap-4">
+            <HeroCta />
+            <Link
+              href="/categories/yeni-gelenler"
+              className="bg-[#C6213A] px-8 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white transition-colors hover:bg-[#a91b30]"
+            >
+              YENİ GELENLER
+            </Link>
+          </div>
         </div>
       </section>
 

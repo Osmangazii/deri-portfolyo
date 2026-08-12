@@ -40,6 +40,7 @@ El yapımı deri eşyaların (çanta, cüzdan, aksesuar) sergilendiği minimalis
 - [x] Minimalist açılış header'ı — sayfa başında yalnızca ortalanmış LOGO, scroll (>100px) sonrası tam iki satırlı navbar fade-in
 - [x] Sabit yapılı header fade-in — scroll'da yalnızca opacity geçişi, yükseklik/düzen hiç değişmiyor (layout shift yok)
 - [x] Sayfa bazlı header görünürlüğü — fade-in mantığı yalnızca ana sayfada; alt sayfalarda tam navbar her zaman görünür
+- [x] Hero baskın sola-hizalı tipografi düzenine geçirildi — dev `LOGO` tipografisi, vinyet overlay, çift aksiyon butonu
 - [x] Ana sayfaya **ÖZEL KOLEKSİYON** ürün vitrini eklendi — mobilde yatay kaydırmalı şerit, sm+ ızgara; kartlar görsel + başlık + fiyat (indirimde üstü çizili eski fiyat)
 
 ## Yapılacaklar (TODO)
@@ -48,6 +49,8 @@ El yapımı deri eşyaların (çanta, cüzdan, aksesuar) sergilendiği minimalis
 - [ ] Gerçek görseller ve logonun eklenmesi
 
 ## Değişiklik Kaydı
+
+- **Hero "baskın sola hizalı tipografi" düzenine geçirildi (image_9):** İçerik konumu `absolute top-1/2 left-[5%] -translate-y-1/2 text-left` oldu. Tipografi: üstte ince kicker "YENİ SEZON — 2026" (`text-neutral-400 text-sm`), onun altında dev marka tipografisi `text-8xl md:text-[12rem] font-extrabold leading-none tracking-tight text-white` ("LOGO"), altında `max-w-lg text-neutral-200` açıklama ve `mb-10`, en altta iki butonluk satır: beyaz `bg-white text-black px-8 py-3` (KOLEKSİYONU KEŞFET — HeroCta, vitrine scroll) + kırmızı `bg-[#C6213A] text-white px-8 py-3` (YENİ GELENLER → `/categories/yeni-gelenler`, hover `#a91b30`) — keskin, geometrik butonlar (rounded yok). Arka plan görselinde `object-cover object-center` + vinyet: `bg-linear-to-r from-black/70 via-black/35 to-black/45` (sol tarafta metin bölgesi daha koyu). `HeroCta` butonu `px-8 py-3` stiline güncellendi (eski `px-10 py-4 mt-10` kaldırıldı). Responsive: mobilde `text-8xl` (96px), md+ `12rem` (192px) — "LOGO" dar ekranlarda taşmıyor; header ile çakışma yok (içerik dikey ortada, header üstte şeffaf).
 
 - **Sayfa bazlı header görünürlüğü:** `isHomepage = pathname === "/"` türetildi; `showControls = !isHomepage || isScrolled`. Ana sayfada önceki davranış korunuyor (başlangıçta yalnızca LOGO, scroll >100px sonrası fade-in). Alt sayfalarda (`/categories/...`, `/product/...`, `/[gender]` vb.) scroll mantığı tamamen devre dışı: tam iki satırlı navbar, kontroller ve `bg-black/90 border-b border-white/10` arka plan en üstten itibaren `opacity-100 pointer-events-auto` (inert yok). Header arka planı: ana sayfa scroll'da `bg-black/80`, alt sayfalarda `bg-black/90`.
 
