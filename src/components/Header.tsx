@@ -42,6 +42,18 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Mobil menü açıkken arka plan sayfasının kaymasını engelle (scroll bleed)
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isMenuOpen]);
+
   return (
     <header
       className={`fixed left-0 right-0 top-0 z-50 w-full transition-colors duration-500 ease-in-out ${

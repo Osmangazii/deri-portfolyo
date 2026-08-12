@@ -40,6 +40,7 @@ El yapımı deri eşyaların (çanta, cüzdan, aksesuar) sergilendiği minimalis
 - [x] Minimalist açılış header'ı — sayfa başında yalnızca ortalanmış LOGO, scroll (>100px) sonrası tam iki satırlı navbar fade-in
 - [x] Sabit yapılı header fade-in — scroll'da yalnızca opacity geçişi, yükseklik/düzen hiç değişmiyor (layout shift yok)
 - [x] Sayfa bazlı header görünürlüğü — fade-in mantığı yalnızca ana sayfada; alt sayfalarda tam navbar her zaman görünür
+- [x] Mobil drawer etkileşim düzeltmeleri — body scroll kilidi (scroll bleed yok), drawer içi `overflow-y-auto max-h-screen`, backdrop tıklamasıyla kapanma
 - [x] Hero baskın sola-hizalı tipografi düzenine geçirildi — dev `LOGO` tipografisi, vinyet overlay, çift aksiyon butonu
 - [x] Ana sayfaya **ÖZEL KOLEKSİYON** ürün vitrini eklendi — mobilde yatay kaydırmalı şerit, sm+ ızgara; kartlar görsel + başlık + fiyat (indirimde üstü çizili eski fiyat)
 
@@ -49,6 +50,8 @@ El yapımı deri eşyaların (çanta, cüzdan, aksesuar) sergilendiği minimalis
 - [ ] Gerçek görseller ve logonun eklenmesi
 
 ## Değişiklik Kaydı
+
+- **Mobil drawer etkileşim düzeltmeleri:** `Header.tsx`'e `isMenuOpen` bağımlı yeni `useEffect` eklendi — menü açıkken `document.body.style.overflow = "hidden"`, kapalıyken/cleanup'ta `"unset"` (arka plan sayfası kilitleniyor, scroll bleed yok; cleanup sayesinde state değişse bile overflow asla takılı kalmıyor). `MobileMenu.tsx`'teki navigasyon listesine `max-h-screen` eklendi (`flex-1 overflow-y-auto` ile birlikte) — içerik ekran yüksekliğini aşarsa yalnızca drawer içinde kayar. Backdrop (karartma katmanı) zaten `onClick={onClose}` ile kapanıyordu — doğrulandı, değişiklik gerekmedi.
 
 - **Hero "baskın sola hizalı tipografi" düzenine geçirildi (image_9):** İçerik konumu `absolute top-1/2 left-[5%] -translate-y-1/2 text-left` oldu. Tipografi: üstte ince kicker "YENİ SEZON — 2026" (`text-neutral-400 text-sm`), onun altında dev marka tipografisi `text-8xl md:text-[12rem] font-extrabold leading-none tracking-tight text-white` ("LOGO"), altında `max-w-lg text-neutral-200` açıklama ve `mb-10`, en altta iki butonluk satır: beyaz `bg-white text-black px-8 py-3` (KOLEKSİYONU KEŞFET — HeroCta, vitrine scroll) + kırmızı `bg-[#C6213A] text-white px-8 py-3` (YENİ GELENLER → `/categories/yeni-gelenler`, hover `#a91b30`) — keskin, geometrik butonlar (rounded yok). Arka plan görselinde `object-cover object-center` + vinyet: `bg-linear-to-r from-black/70 via-black/35 to-black/45` (sol tarafta metin bölgesi daha koyu). `HeroCta` butonu `px-8 py-3` stiline güncellendi (eski `px-10 py-4 mt-10` kaldırıldı). Responsive: mobilde `text-8xl` (96px), md+ `12rem` (192px) — "LOGO" dar ekranlarda taşmıyor; header ile çakışma yok (içerik dikey ortada, header üstte şeffaf).
 

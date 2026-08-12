@@ -91,7 +91,7 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
         {/* Orta: dikey navigasyon listesi */}
         <nav
           aria-label="Mobil gezinme"
-          className="flex-1 overflow-y-auto px-4"
+          className="max-h-screen flex-1 overflow-y-auto px-4"
         >
           <ul className="divide-y divide-neutral-900">
             {NAV_SECTIONS.map((section) => (
