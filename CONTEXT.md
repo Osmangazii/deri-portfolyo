@@ -30,15 +30,20 @@ El yapımı deri eşyaların (çanta, cüzdan, aksesuar) sergilendiği minimalis
 - [x] Özel marka fontu entegrasyonu tamamlandı — `next/font/local` ile `src/app/fonts/custom-brand-font.woff2` yüklendi (`--font-custom`), Tailwind `font-sans` eşlemesiyle tüm sitede varsayılan font yapıldı
 - [x] Ürün veri mimarisi kuruldu — `src/types/product.ts` (`Product` interface) ve `src/data/products.ts` (`MOCK_PRODUCTS` + `getFeaturedProducts()` / `getProductsByCategory()`)
 - [x] Vitrin `MOCK_PRODUCTS` ile beslendi — `ProductCard` bileşeni (`next/image`, fiyat formatı, hover efektleri) ve responsive ızgara (1/2/4 sütun)
+- [x] Ürün detay sayfası oluşturuldu (`/product/[slug]`) — galeri, detay paneli, SEPETE EKLE, akordeonlar, `notFound()`
+- [x] Detay sayfası geliştirildi — dikey thumbnail galerisi (`useState` ile aktif görsel), hover zoom, SEPETE EKLE yanında favori kalbi
 - [x] Ana sayfaya **ÖZEL KOLEKSİYON** ürün vitrini eklendi — mobilde yatay kaydırmalı şerit, sm+ ızgara; kartlar görsel + başlık + fiyat (indirimde üstü çizili eski fiyat)
 
 ## Yapılacaklar (TODO)
 
 - [ ] Footer bileşeninin yazılması
-- [ ] Ürün detay sayfasının (`/urunler/[slug]`) yazılması
 - [ ] Gerçek görseller ve logonun eklenmesi
 
 ## Değişiklik Kaydı
+
+- **Detay sayfası etkileşimleri eklendi:** `src/components/ProductGallery.tsx` (client bileşen) — masaüstünde solda dikey thumbnail listesi + sağında ana görsel, thumbnail tıklaması `useState(activeIndex)` ile ana görseli değiştiriyor (aktif thumb'da beyaz border); mobilde ana görsel üstte, thumbnail'ler yatay kaydırmalı şerit olarak altta (`flex-col-reverse` + `overflow-x-auto`). Ana görselde hover zoom: `group-hover:scale-110` + `overflow-hidden` + `cursor-zoom-in`. Sayfa server component kaldı (metadata/static params korunuyor); yalnızca galeri client. Sağ panelde SEPETE EKLE butonunun yanına minimalist kalp (favori) butonu eklendi (`w-14`, border kutu, hover'da border+ikonda beyaza geçiş). Mock veri güncellendi: görsel eşlemesi düzeltildi — ürün 1 → `product-image1` + `product-image-detail1`, ürün 2 → `product-image2` + `product-image-detail2` (her ürün kendi detay görseline sahip); ürün 3 ve 4'ün kendine ait detay görseli henüz yok, tek ana görselle kalıyorlar. Paylaşılan `PRODUCT_DETAIL_IMAGE` sabiti kaldırıldı.
+
+- **Ürün detay sayfası eklendi (`/product/[slug]`):** Next.js 15+ standardına uygun `params: Promise<{ slug: string }>` (await ile okunuyor). `getProductBySlug()` helper'ı `src/data/products.ts`'e eklendi; ürün bulunamazsa `notFound()`. `generateStaticParams()` ile 4 mock ürün derleme zamanında statik üretiliyor, `generateMetadata()` başlık/açıklama sağlıyor. Layout: solda `lg:sticky` görsel galerisi (ilk görselde `priority`), sağda kategori/büyük başlık/fiyat (`3.450 TL`), açıklama, Renk + Beden seçici placeholder'ları, beyaz **SEPETE EKLE** butonu ve `<details>` tabanlı "Kargo & Teslimat" / "Bakım Talimatları" akordeonları (açılınca `+` ikonu 45° döner). `ProductCard` linki `/urunler/[slug]` yerine `/product/[slug]` olarak güncellendi.
 
 - **Vitrin gerçek verilere bağlandı:** `src/components/ProductCard.tsx` oluşturuldu — `next/image` ile `images[0]` (fill + `object-cover`, `aspect-3/4`, responsive `sizes`), hover'da görsel zoom (`scale-105`) + alttan beliren "İncele" katmanı, kategori/title/price alanlarında yumuşak renk geçişi. Fiyat `toLocaleString("tr-TR")` ile "3.450 TL" biçiminde. `page.tsx`'teki statik `SHOWCASE_PRODUCTS` ve yerel kart kaldırıldı; vitrin `MOCK_PRODUCTS` üzerinde `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6` ile çalışıyor (mobildeki yatay kaydırma şeridi yerine temiz ızgara).
 

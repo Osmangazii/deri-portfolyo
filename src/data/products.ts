@@ -7,7 +7,10 @@ export const MOCK_PRODUCTS: Product[] = [
     slug: "el-yapimi-deri-cuzdan",
     price: 1850,
     category: "ÇANTA",
-    images: ["/images/products/product-image1.avif"],
+    images: [
+      "/images/products/product-image1.avif",
+      "/images/products/product-image-detail1.avif",
+    ],
     isFeatured: true,
     description:
       "Bitkisel tabaklanmış deriden, elde dikilmiş klasik çift katlı cüzdan. Zamanla benzersiz bir patina kazanır.",
@@ -18,7 +21,10 @@ export const MOCK_PRODUCTS: Product[] = [
     slug: "suet-deri-canta",
     price: 6900,
     category: "ÇANTA",
-    images: ["/images/products/product-image2.avif"],
+    images: [
+      "/images/products/product-image2.avif",
+      "/images/products/product-image-detail2.avif",
+    ],
     isFeatured: true,
     description:
       "Yumuşak süet deriden üretilmiş, keten astarlı günlük omuz çantası. Elde dikilmiş dikişleriyle yıllarca size eşlik eder.",
@@ -52,4 +58,8 @@ export function getFeaturedProducts(): Product[] {
 
 export function getProductsByCategory(category: string): Product[] {
   return MOCK_PRODUCTS.filter((product) => product.category === category);
+}
+
+export function getProductBySlug(slug: string): Product | undefined {
+  return MOCK_PRODUCTS.find((product) => product.slug === slug);
 }

@@ -10,7 +10,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const primaryImage = product.images[0];
 
   return (
-    <Link href={`/urunler/${product.slug}`} className="group block">
+    <Link href={`/product/${product.slug}`} className="group block">
       {/* Görsel alanı */}
       <div className="relative aspect-3/4 overflow-hidden bg-neutral-900">
         {primaryImage && (
