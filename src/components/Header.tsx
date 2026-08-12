@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MobileMenu from "@/components/MobileMenu";
 
 type NavLink = {
@@ -29,27 +29,50 @@ const CART_COUNT = 3;
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const closeMenu = () => setIsMenuOpen(false);
   const pathname = usePathname();
+  const isHomepage = pathname === "/";
+  const showControls = !isHomepage || isScrolled;
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 100);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-50 bg-black">
-      {/* Üst bar: mobilde flex (hamburger | logo | ikonlar), md+ 3 sütunlu grid */}
+    <header
+      className={`fixed left-0 right-0 top-0 z-50 w-full transition-colors duration-500 ease-in-out ${
+        showControls
+          ? `border-b border-white/10 backdrop-blur-md ${isHomepage ? "bg-black/80" : "bg-black/90"} `
+          : "border-b border-transparent bg-transparent"
+      }`}
+    >
+      {/* Üst bar — yapı scroll durumundan bağımsız sabit */}
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6 md:grid md:grid-cols-3 md:gap-4 lg:px-8">
         {/* Sol: hamburger (mobil) + cinsiyet sekmeleri (md+) */}
-        <div className="flex items-center">
+        <div
+          inert={!showControls}
+          className={`flex items-center transition-opacity duration-500 ease-in-out ${
+            showControls
+              ? "pointer-events-auto opacity-100"
+              : "pointer-events-none opacity-0"
+          }`}
+        >
           <button
             type="button"
             aria-label="Menüyü aç"
             aria-expanded={isMenuOpen}
             onClick={() => setIsMenuOpen(true)}
-            className="cursor-pointer text-neutral-300 transition-colors hover:text-white md:hidden"
+            className="cursor-pointer text-neutral-200 transition-colors hover:text-white md:hidden"
           >
             <MenuIcon className="h-5 w-5" />
           </button>
           <nav
             aria-label="Koleksiyon sekmeleri"
-            className="hidden items-center gap-1 rounded-md border border-neutral-800 p-1 md:flex"
+            className="hidden items-center gap-1 rounded-md border border-white/10 bg-white/5 p-1 md:flex"
           >
             {GENDER_TABS.map((tab) => (
               <Link
@@ -58,8 +81,8 @@ export default function Header() {
                 aria-current={pathname === tab.href ? "page" : undefined}
                 className={`rounded px-3 py-1.5 text-xs font-medium uppercase tracking-[0.2em] transition-colors sm:text-sm sm:tracking-[0.25em] ${
                   pathname === tab.href
-                    ? "bg-neutral-800 text-white"
-                    : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
+                    ? "bg-white/15 text-white"
+                    : "text-neutral-200 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 {tab.label}
@@ -69,17 +92,20 @@ export default function Header() {
         </div>
 
         {/* Orta: logo */}
-        <Link href="/" className="justify-self-center whitespace-nowrap">
-          <span className="text-lg font-semibold uppercase tracking-[0.3em] text-white sm:text-xl sm:tracking-[0.35em]">
-            LOGO
-          </span>
-        </Link>
+        <Logo className="justify-self-center" />
 
         {/* Sağ: arama (md+) + aksiyon ikonları (mobilde yalnızca wishlist + sepet) */}
-        <div className="flex items-center justify-self-end gap-3 sm:gap-5">
+        <div
+          inert={!showControls}
+          className={`flex items-center justify-self-end gap-3 transition-opacity duration-500 ease-in-out sm:gap-5 ${
+            showControls
+              ? "pointer-events-auto opacity-100"
+              : "pointer-events-none opacity-0"
+          }`}
+        >
           {/* Arama çubuğu (masaüstü) */}
-          <div className="hidden items-center gap-2 rounded-full border border-neutral-800 px-3 py-2 transition-colors focus-within:border-neutral-500 md:flex">
-            <SearchIcon className="h-4 w-4 text-neutral-400" />
+          <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 backdrop-blur-sm transition-colors focus-within:border-white/40 md:flex">
+            <SearchIcon className="h-4 w-4 text-neutral-300" />
             <input
               type="search"
               placeholder="Ara"
@@ -99,10 +125,13 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Alt bar: alt kategori linkleri (yalnızca md+) */}
+      {/* Alt bar: alt kategori linkleri (yalnızca md+, ana sayfada scroll ile belirir) */}
       <nav
         aria-label="Alt kategoriler"
-        className="hidden h-11 items-center gap-5 overflow-x-auto border-t border-neutral-900 px-4 scrollbar-none md:flex md:justify-center md:gap-8 [&::-webkit-scrollbar]:hidden"
+        inert={!showControls}
+        className={`hidden h-11 items-center gap-5 overflow-x-auto border-t border-white/10 px-4 scrollbar-none transition-opacity duration-500 ease-in-out md:flex md:justify-center md:gap-8 [&::-webkit-scrollbar]:hidden ${
+          showControls ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+        }`}
       >
         {CATEGORY_LINKS.map((link) => (
           <Link
@@ -116,7 +145,7 @@ export default function Header() {
         <button
           type="button"
           aria-label="Daha fazla kategori"
-          className="cursor-pointer text-neutral-300 transition-colors hover:text-neutral-400"
+          className="cursor-pointer text-neutral-200 transition-colors hover:text-neutral-400"
         >
           <EllipsisIcon className="h-4 w-4" />
         </button>
@@ -125,6 +154,16 @@ export default function Header() {
       {/* Mobil menü (drawer) */}
       <MobileMenu open={isMenuOpen} onClose={closeMenu} />
     </header>
+  );
+}
+
+function Logo({ className = "" }: { className?: string }) {
+  return (
+    <Link href="/" className={`whitespace-nowrap ${className}`}>
+      <span className="text-lg font-semibold uppercase tracking-[0.3em] text-white sm:text-xl sm:tracking-[0.35em]">
+        LOGO
+      </span>
+    </Link>
   );
 }
 
@@ -141,7 +180,7 @@ function IconButton({ label, className, badgeCount, children }: IconButtonProps)
       type="button"
       aria-label={label}
       title={label}
-      className={`relative cursor-pointer text-neutral-300 transition-colors hover:text-white ${className ?? ""}`}
+      className={`relative cursor-pointer text-neutral-200 transition-colors hover:text-white ${className ?? ""}`}
     >
       {children}
       {badgeCount !== undefined && badgeCount > 0 && (

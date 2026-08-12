@@ -37,7 +37,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
+    <main className="mx-auto flex w-full max-w-7xl flex-1 px-4 pb-10 pt-24 sm:px-6 sm:pb-16 sm:pt-36 lg:px-8">
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
         {/* Sol: görsel galerisi (masaüstünde yapışkan) */}
         <div className="lg:sticky lg:top-32 lg:self-start">

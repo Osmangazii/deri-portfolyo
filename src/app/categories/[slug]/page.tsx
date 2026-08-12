@@ -54,7 +54,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     : MOCK_PRODUCTS;
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 pb-10 pt-24 sm:px-6 sm:pb-14 sm:pt-36 lg:px-8">
       {/* Breadcrumb */}
       <nav
         aria-label="Breadcrumb"

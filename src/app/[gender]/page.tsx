@@ -46,7 +46,7 @@ export default async function GenderPage({ params }: GenderPageProps) {
   const products = getProductsByGender(gender);
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 pb-10 pt-24 sm:px-6 sm:pb-14 sm:pt-36 lg:px-8">
       {/* Banner */}
       <div className="border-y border-neutral-900 py-14 text-center sm:py-20">
         <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-5xl">

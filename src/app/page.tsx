@@ -1,4 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
+import HeroCta from "@/components/HeroCta";
 import ProductCard from "@/components/ProductCard";
 import { MOCK_PRODUCTS } from "@/data/products";
 
@@ -16,55 +18,39 @@ const CATEGORIES: Category[] = [
 export default function Home() {
   return (
     <main className="flex flex-1 flex-col">
-      {/* Hero */}
-      <section className="grid grid-cols-1 lg:min-h-[calc(100vh-7.75rem)] lg:grid-cols-2">
-        {/* Görsel alanı */}
-        <div className="relative flex items-center justify-center overflow-hidden bg-linear-to-br from-zinc-800 via-zinc-900 to-black">
-          <svg
-            viewBox="0 0 200 240"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-56 w-auto text-zinc-700 sm:h-72"
-            aria-hidden="true"
-          >
-            {/* Tote bag silüeti */}
-            <path d="M58 88h84l12 132H46L58 88z" />
-            <path d="M70 88c0-32 60-32 60 0" />
-            <path d="M64 132h72" />
-            <path d="M66 156h68" />
-            <path d="M68 180h64" />
-          </svg>
-          <p className="absolute bottom-6 left-6 text-[0.65rem] font-medium uppercase tracking-[0.35em] text-zinc-600">
-            Görsel Alanı
-          </p>
-        </div>
+      {/* Hero: tam ekran */}
+      <section className="relative h-svh w-full overflow-hidden">
+        <Image
+          src="/images/hero/photo-1711915506137-dd9e9b3488a1.avif"
+          alt="El yapımı deri koleksiyonu"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+        />
+        {/* Karartma gradyanı — metin ve navigasyon okunabilirliği için */}
+        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/25 to-black/40" />
 
-        {/* Metin ve CTA */}
-        <div className="flex flex-col items-start justify-center px-6 py-24 sm:px-12 lg:px-20 lg:py-0">
-          <p className="text-xs font-medium uppercase tracking-[0.35em] text-zinc-400">
+        {/* İçerik */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.4em] text-neutral-300">
             El Yapımı Deri Eşyalar
           </p>
-          <h1 className="mt-6 max-w-xl text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Deri, zamana meydan okur.
+          <h1 className="mt-6 max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-white sm:text-6xl lg:text-7xl">
+            EL YAPIMI DERİ KOLEKSİYONU
           </h1>
-          <p className="mt-6 max-w-md text-lg leading-relaxed text-zinc-400">
-            Elde dikilen çanta, cüzdan ve aksesuarlar. Her parça, yıllar içinde
-            size eşlik eden gerçek deriden üretilir.
+          <p className="mt-6 max-w-xl text-base leading-relaxed text-neutral-300 sm:text-lg">
+            Zamana meydan okuyan zanaat.
           </p>
-          <Link
-            href="/categories/yeni-gelenler"
-            className="mt-10 inline-flex items-center bg-white px-10 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-black transition-colors hover:bg-zinc-200"
-          >
-            İncele
-          </Link>
+          <HeroCta />
         </div>
       </section>
 
       {/* Özel koleksiyon vitrini */}
-      <section className="border-t border-neutral-900 px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+      <section
+        id="products-section"
+        className="scroll-mt-32 border-t border-neutral-900 px-4 py-16 sm:px-6 sm:py-24 lg:px-8"
+      >
         <div className="mx-auto max-w-7xl">
           <div className="mb-10 text-center">
             <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
