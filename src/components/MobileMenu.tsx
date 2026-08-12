@@ -17,12 +17,12 @@ const GENDER_TABS: NavLink[] = [
 ];
 
 const NAV_SECTIONS: MobileNavSection[] = [
-  { label: "YENİ GELENLER", href: "/urunler/yeni-gelenler", hasSubmenu: false },
-  { label: "ÜST GİYİM", href: "/urunler/ust-giyim", hasSubmenu: true },
-  { label: "ALT GİYİM", href: "/urunler/alt-giyim", hasSubmenu: true },
-  { label: "DIŞ GİYİM", href: "/urunler/dis-giyim", hasSubmenu: true },
-  { label: "ÇANTA", href: "/urunler/canta", hasSubmenu: true },
-  { label: "AKSESUAR", href: "/urunler/aksesuar", hasSubmenu: true },
+  { label: "YENİ GELENLER", href: "/categories/yeni-gelenler", hasSubmenu: false },
+  { label: "ÜST GİYİM", href: "/categories/ust-giyim", hasSubmenu: true },
+  { label: "ALT GİYİM", href: "/categories/alt-giyim", hasSubmenu: true },
+  { label: "DIŞ GİYİM", href: "/categories/dis-giyim", hasSubmenu: true },
+  { label: "ÇANTA", href: "/categories/canta", hasSubmenu: true },
+  { label: "AKSESUAR", href: "/categories/aksesuar", hasSubmenu: true },
 ];
 
 const BOTTOM_ACTIONS: NavLink[] = [

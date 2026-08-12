@@ -1,4 +1,4 @@
-import type { Product } from "@/types/product";
+import type { Gender, Product } from "@/types/product";
 
 export const MOCK_PRODUCTS: Product[] = [
   {
@@ -7,9 +7,10 @@ export const MOCK_PRODUCTS: Product[] = [
     slug: "el-yapimi-deri-cuzdan",
     price: 1850,
     category: "ÇANTA",
+    gender: "unisex",
     images: [
-      "/images/products/product-image1.avif",
-      "/images/products/product-image-detail1.avif",
+      "/images/products/product1-image1.avif",
+      "/images/products/product1-image2.avif",
     ],
     isFeatured: true,
     description:
@@ -21,10 +22,8 @@ export const MOCK_PRODUCTS: Product[] = [
     slug: "suet-deri-canta",
     price: 6900,
     category: "ÇANTA",
-    images: [
-      "/images/products/product-image2.avif",
-      "/images/products/product-image-detail2.avif",
-    ],
+    gender: "kadin",
+    images: ["/images/products/product2-image1.avif"],
     isFeatured: true,
     description:
       "Yumuşak süet deriden üretilmiş, keten astarlı günlük omuz çantası. Elde dikilmiş dikişleriyle yıllarca size eşlik eder.",
@@ -35,7 +34,8 @@ export const MOCK_PRODUCTS: Product[] = [
     slug: "deri-anahtarlik",
     price: 450,
     category: "AKSESUAR",
-    images: ["/images/products/product-image3.avif"],
+    gender: "erkek",
+    images: ["/images/products/product3-image1.avif"],
     description:
       "Tek parça deriden kesilen, pirinç halkalı sade anahtarlık. Küçük ama her gün elinize değen bir zanaat parçası.",
   },
@@ -45,7 +45,8 @@ export const MOCK_PRODUCTS: Product[] = [
     slug: "minimalist-kartlik",
     price: 950,
     category: "AKSESUAR",
-    images: ["/images/products/product-image4.avif"],
+    gender: "unisex",
+    images: ["/images/products/product4-image1.avif"],
     isFeatured: true,
     description:
       "Altı karta kadar taşıyan, ince ve hafif minimalist kartlık. Cebe sığan, elde dikilmiş zarif bir parça.",
@@ -58,6 +59,12 @@ export function getFeaturedProducts(): Product[] {
 
 export function getProductsByCategory(category: string): Product[] {
   return MOCK_PRODUCTS.filter((product) => product.category === category);
+}
+
+export function getProductsByGender(gender: Gender): Product[] {
+  return gender === "unisex"
+    ? MOCK_PRODUCTS
+    : MOCK_PRODUCTS.filter((product) => product.gender === gender);
 }
 
 export function getProductBySlug(slug: string): Product | undefined {

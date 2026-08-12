@@ -8,9 +8,9 @@ type Category = {
 };
 
 const CATEGORIES: Category[] = [
-  { name: "GIYIM", href: "/urunler/giyim" },
-  { name: "AKSESUAR", href: "/urunler/aksesuar" },
-  { name: "ÇANTA", href: "/urunler/canta" },
+  { name: "GIYIM", href: "/categories/giyim" },
+  { name: "AKSESUAR", href: "/categories/aksesuar" },
+  { name: "ÇANTA", href: "/categories/canta" },
 ];
 
 export default function Home() {
@@ -55,7 +55,7 @@ export default function Home() {
             size eşlik eden gerçek deriden üretilir.
           </p>
           <Link
-            href="/urunler"
+            href="/categories/yeni-gelenler"
             className="mt-10 inline-flex items-center bg-white px-10 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-black transition-colors hover:bg-zinc-200"
           >
             İncele
@@ -94,7 +94,7 @@ export default function Home() {
               Kategoriler
             </h2>
             <Link
-              href="/urunler"
+              href="/categories/yeni-gelenler"
               className="text-xs font-medium uppercase tracking-[0.25em] text-zinc-400 transition-colors hover:text-white"
             >
               Tümünü Gör

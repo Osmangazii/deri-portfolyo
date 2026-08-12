@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import MobileMenu from "@/components/MobileMenu";
 
@@ -16,11 +17,11 @@ const GENDER_TABS: NavLink[] = [
 ];
 
 const CATEGORY_LINKS: NavLink[] = [
-  { label: "YENİ GELENLER", href: "/urunler/yeni-gelenler" },
-  { label: "ÜST GİYİM", href: "/urunler/ust-giyim" },
-  { label: "ALT GİYİM", href: "/urunler/alt-giyim" },
-  { label: "DIŞ GİYİM", href: "/urunler/dis-giyim" },
-  { label: "ÇANTA", href: "/urunler/canta" },
+  { label: "YENİ GELENLER", href: "/categories/yeni-gelenler" },
+  { label: "ÜST GİYİM", href: "/categories/ust-giyim" },
+  { label: "ALT GİYİM", href: "/categories/alt-giyim" },
+  { label: "DIŞ GİYİM", href: "/categories/dis-giyim" },
+  { label: "ÇANTA", href: "/categories/canta" },
 ];
 
 const WISHLIST_COUNT = 2;
@@ -29,6 +30,7 @@ const CART_COUNT = 3;
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const closeMenu = () => setIsMenuOpen(false);
+  const pathname = usePathname();
 
   return (
     <header className="sticky top-0 z-50 bg-black">
@@ -53,7 +55,12 @@ export default function Header() {
               <Link
                 key={tab.href}
                 href={tab.href}
-                className="rounded px-3 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-white transition-colors hover:bg-neutral-800 hover:text-neutral-400 sm:text-sm sm:tracking-[0.25em]"
+                aria-current={pathname === tab.href ? "page" : undefined}
+                className={`rounded px-3 py-1.5 text-xs font-medium uppercase tracking-[0.2em] transition-colors sm:text-sm sm:tracking-[0.25em] ${
+                  pathname === tab.href
+                    ? "bg-neutral-800 text-white"
+                    : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
+                }`}
               >
                 {tab.label}
               </Link>
