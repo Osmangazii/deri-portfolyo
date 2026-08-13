@@ -2,27 +2,28 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import CategoryView from "@/components/CategoryView";
-import { getProductsByCategory, MOCK_PRODUCTS } from "@/data/products";
+import { getProductsFiltered } from "@/services/productService";
 
 type CategoryPageProps = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 type CategoryInfo = {
   title: string;
-  /** Veri setindeki kategori değeriyle eşleşirse ürünler filtrelenir, yoksa tümü gösterilir. */
+  /** DB'deki kategori değeri; varsa ürünler bu kategoriden sorgulanır, yoksa tüm ürünler gösterilir. */
   category?: string;
 };
 
 const CATEGORIES_BY_SLUG: Record<string, CategoryInfo> = {
   "yeni-gelenler": { title: "⭐ YENİ GELENLER" },
-  "ust-giyim": { title: "ÜST GİYİM" },
-  "alt-giyim": { title: "ALT GİYİM" },
-  "dis-giyim": { title: "DIŞ GİYİM" },
-  "canta": { title: "ÇANTA", category: "ÇANTA" },
-  "aksesuar": { title: "AKSESUAR", category: "AKSESUAR" },
-  "giyim": { title: "GIYIM" },
+  "canta": { title: "ÇANTA", category: "canta" },
+  "cuzdan": { title: "CÜZDAN", category: "cuzdan" },
+  "kemer": { title: "KEMER", category: "kemer" },
+  "aksesuar": { title: "AKSESUAR", category: "aksesuar" },
 };
+
+const GENDERS = ["kadin", "erkek", "unisex"] as const;
 
 export function generateStaticParams() {
   return Object.keys(CATEGORIES_BY_SLUG).map((slug) => ({ slug }));
@@ -41,7 +42,10 @@ export async function generateMetadata({
   return { title: info.title };
 }
 
-export default async function CategoryPage({ params }: CategoryPageProps) {
+export default async function CategoryPage({
+  params,
+  searchParams,
+}: CategoryPageProps) {
   const { slug } = await params;
   const info = CATEGORIES_BY_SLUG[slug];
 
@@ -49,9 +53,18 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     notFound();
   }
 
-  const products = info.category
-    ? getProductsByCategory(info.category)
-    : MOCK_PRODUCTS;
+  const rawGender = (await searchParams).gender;
+  const gender =
+    typeof rawGender === "string" &&
+    (GENDERS as readonly string[]).includes(rawGender)
+      ? rawGender
+      : undefined;
+
+  // Bileşik filtre: kategori (varsa) + cinsiyet (opsiyonel)
+  const products = await getProductsFiltered({
+    category: info.category,
+    gender,
+  });
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 pb-10 pt-24 sm:px-6 sm:pb-14 sm:pt-36 lg:px-8">

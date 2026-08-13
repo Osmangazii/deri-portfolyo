@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import MobileMenu from "@/components/MobileMenu";
+import { useCart } from "@/context/CartContext";
 
 type NavLink = {
   label: string;
@@ -17,23 +18,46 @@ const GENDER_TABS: NavLink[] = [
 ];
 
 const CATEGORY_LINKS: NavLink[] = [
-  { label: "YENİ GELENLER", href: "/categories/yeni-gelenler" },
-  { label: "ÜST GİYİM", href: "/categories/ust-giyim" },
-  { label: "ALT GİYİM", href: "/categories/alt-giyim" },
-  { label: "DIŞ GİYİM", href: "/categories/dis-giyim" },
-  { label: "ÇANTA", href: "/categories/canta" },
+  { label: "ÇANTA", href: "/kategori/canta" },
+  { label: "CÜZDAN", href: "/kategori/cuzdan" },
+  { label: "KEMER", href: "/kategori/kemer" },
+  { label: "AKSESUAR", href: "/kategori/aksesuar" },
 ];
 
 const WISHLIST_COUNT = 2;
-const CART_COUNT = 3;
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const closeMenu = () => setIsMenuOpen(false);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isHomepage = pathname === "/";
   const showControls = !isHomepage || isScrolled;
+  const { totalItemCount, toggleCart } = useCart();
+
+  // Aktif cinsiyet: cinsiyet rotasından (/kadin vb.) veya ?gender= parametresinden
+  const queryGender = searchParams.get("gender");
+  const activeGender =
+    pathname === "/kadin"
+      ? "kadin"
+      : pathname === "/erkek"
+        ? "erkek"
+        : pathname === "/unisex"
+          ? "unisex"
+          : queryGender === "kadin" || queryGender === "erkek" || queryGender === "unisex"
+            ? queryGender
+            : undefined;
+
+  // Sekme aktif mi: cinsiyet rotasında mıyız yoksa ?gender= sekmesini mi işaret ediyor
+  const isTabActive = (href: string) => {
+    const tabGender = href.slice(1); // "/kadin" -> "kadin"
+    return pathname === href || queryGender === tabGender;
+  };
+
+  // Kategori linklerine aktif cinsiyeti ?gender= olarak ekle (bileşik filtre)
+  const categoryHref = (href: string) =>
+    activeGender ? `${href}?gender=${activeGender}` : href;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 100);
@@ -90,10 +114,10 @@ export default function Header() {
               <Link
                 key={tab.href}
                 href={tab.href}
-                aria-current={pathname === tab.href ? "page" : undefined}
+                aria-current={isTabActive(tab.href) ? "page" : undefined}
                 className={`rounded px-3 py-1.5 text-xs font-medium uppercase tracking-[0.2em] transition-colors sm:text-sm sm:tracking-[0.25em] ${
-                  pathname === tab.href
-                    ? "bg-white/15 text-white"
+                  isTabActive(tab.href)
+                    ? "bg-white font-semibold text-black"
                     : "text-neutral-200 hover:bg-white/10 hover:text-white"
                 }`}
               >
@@ -131,13 +155,13 @@ export default function Header() {
           <IconButton label="Wishlist" badgeCount={WISHLIST_COUNT}>
             <HeartIcon className="h-5 w-5" />
           </IconButton>
-          <IconButton label="Sepetim" badgeCount={CART_COUNT}>
+          <IconButton label="Sepetim" badgeCount={totalItemCount} onClick={toggleCart}>
             <BagIcon className="h-5 w-5" />
           </IconButton>
         </div>
       </div>
 
-      {/* Alt bar: alt kategori linkleri (yalnızca md+, ana sayfada scroll ile belirir) */}
+      {/* Alt bar: ana kategoriler (yalnızca md+, ana sayfada scroll ile belirir) */}
       <nav
         aria-label="Alt kategoriler"
         inert={!showControls}
@@ -148,19 +172,12 @@ export default function Header() {
         {CATEGORY_LINKS.map((link) => (
           <Link
             key={link.href}
-            href={link.href}
+            href={categoryHref(link.href)}
             className="whitespace-nowrap text-xs font-medium uppercase tracking-[0.2em] text-neutral-100 transition-colors hover:text-neutral-400"
           >
             {link.label}
           </Link>
         ))}
-        <button
-          type="button"
-          aria-label="Daha fazla kategori"
-          className="cursor-pointer text-neutral-200 transition-colors hover:text-neutral-400"
-        >
-          <EllipsisIcon className="h-4 w-4" />
-        </button>
       </nav>
 
       {/* Mobil menü (drawer) */}
@@ -183,15 +200,17 @@ type IconButtonProps = {
   label: string;
   className?: string;
   badgeCount?: number;
+  onClick?: () => void;
   children: React.ReactNode;
 };
 
-function IconButton({ label, className, badgeCount, children }: IconButtonProps) {
+function IconButton({ label, className, badgeCount, onClick, children }: IconButtonProps) {
   return (
     <button
       type="button"
       aria-label={label}
       title={label}
+      onClick={onClick}
       className={`relative cursor-pointer text-neutral-200 transition-colors hover:text-white ${className ?? ""}`}
     >
       {children}
@@ -288,16 +307,6 @@ function BagIcon({ className }: IconProps) {
       aria-hidden="true"
     >
       <path d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0z" />
-    </svg>
-  );
-}
-
-function EllipsisIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <circle cx="5" cy="12" r="1.6" />
-      <circle cx="12" cy="12" r="1.6" />
-      <circle cx="19" cy="12" r="1.6" />
     </svg>
   );
 }

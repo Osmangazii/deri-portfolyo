@@ -1,13 +1,10 @@
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
 type NavLink = {
   label: string;
   href: string;
-};
-
-type MobileNavSection = NavLink & {
-  hasSubmenu: boolean;
 };
 
 const GENDER_TABS: NavLink[] = [
@@ -16,13 +13,11 @@ const GENDER_TABS: NavLink[] = [
   { label: "UNISEX", href: "/unisex" },
 ];
 
-const NAV_SECTIONS: MobileNavSection[] = [
-  { label: "YENİ GELENLER", href: "/categories/yeni-gelenler", hasSubmenu: false },
-  { label: "ÜST GİYİM", href: "/categories/ust-giyim", hasSubmenu: true },
-  { label: "ALT GİYİM", href: "/categories/alt-giyim", hasSubmenu: true },
-  { label: "DIŞ GİYİM", href: "/categories/dis-giyim", hasSubmenu: true },
-  { label: "ÇANTA", href: "/categories/canta", hasSubmenu: true },
-  { label: "AKSESUAR", href: "/categories/aksesuar", hasSubmenu: true },
+const NAV_SECTIONS: NavLink[] = [
+  { label: "ÇANTA", href: "/kategori/canta" },
+  { label: "CÜZDAN", href: "/kategori/cuzdan" },
+  { label: "KEMER", href: "/kategori/kemer" },
+  { label: "AKSESUAR", href: "/kategori/aksesuar" },
 ];
 
 const BOTTOM_ACTIONS: NavLink[] = [
@@ -36,6 +31,26 @@ type MobileMenuProps = {
 };
 
 export default function MobileMenu({ open, onClose }: MobileMenuProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Aktif cinsiyet: cinsiyet rotasından veya ?gender= parametresinden
+  const queryGender = searchParams.get("gender");
+  const activeGender =
+    pathname === "/kadin"
+      ? "kadin"
+      : pathname === "/erkek"
+        ? "erkek"
+        : pathname === "/unisex"
+          ? "unisex"
+          : queryGender === "kadin" || queryGender === "erkek" || queryGender === "unisex"
+            ? queryGender
+            : undefined;
+
+  // Kategori linklerine aktif cinsiyeti ?gender= olarak eklenir
+  const categoryHref = (href: string) =>
+    activeGender ? `${href}?gender=${activeGender}` : href;
+
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -97,14 +112,11 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
             {NAV_SECTIONS.map((section) => (
               <li key={section.href}>
                 <Link
-                  href={section.href}
+                  href={categoryHref(section.href)}
                   onClick={onClose}
-                  className="flex items-center justify-between py-4 text-sm font-medium uppercase tracking-[0.15em] text-neutral-100 transition-colors hover:text-neutral-400"
+                  className="block py-4 text-sm font-medium uppercase tracking-[0.15em] text-neutral-100 transition-colors hover:text-neutral-400"
                 >
                   {section.label}
-                  {section.hasSubmenu && (
-                    <ChevronIcon className="h-4 w-4 text-neutral-500" />
-                  )}
                 </Link>
               </li>
             ))}
@@ -135,23 +147,6 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
 type IconProps = {
   className: string;
 };
-
-function ChevronIcon({ className }: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M9 6l6 6-6 6" />
-    </svg>
-  );
-}
 
 function CloseIcon({ className }: IconProps) {
   return (

@@ -12,19 +12,6 @@ const GRID_LAYOUTS: Record<Exclude<ViewMode, "list">, string> = {
   "grid-2": "grid-cols-2 lg:grid-cols-2",
 };
 
-const PAGE_SIZE_OPTIONS = [
-  { value: "12", label: "12" },
-  { value: "20", label: "20" },
-  { value: "40", label: "40" },
-];
-
-const SORT_OPTIONS = [
-  { value: "featured", label: "Öne çıkan" },
-  { value: "price-asc", label: "Fiyat (artan)" },
-  { value: "price-desc", label: "Fiyat (azalan)" },
-  { value: "newest", label: "En yeni" },
-];
-
 export default function CategoryView({ products }: { products: Product[] }) {
   const [viewMode, setViewMode] = useState<ViewMode>("grid-4");
 
@@ -32,15 +19,8 @@ export default function CategoryView({ products }: { products: Product[] }) {
 
   return (
     <>
-      {/* Row 1: Filtreler */}
-      <div className="mt-8 flex items-center justify-center gap-3">
-        <FilterButton label="STOK DURUMU" />
-        <FilterButton label="FİYAT" />
-      </div>
-
-      {/* Row 2: Görünüm ve kontrol */}
-      <div className="mt-6 flex flex-col items-center justify-between gap-4 border-y border-neutral-900 py-4 sm:flex-row">
-        {/* Sol: görünüm değiştirici */}
+      {/* Görünüm değiştirici */}
+      <div className="mt-8 flex items-center justify-center border-y border-neutral-900 py-4">
         <div role="group" aria-label="Görünüm seçimi" className="flex items-center gap-1">
           {VIEW_MODES.map((view) => (
             <button
@@ -60,34 +40,14 @@ export default function CategoryView({ products }: { products: Product[] }) {
             </button>
           ))}
         </div>
-
-        {/* Sağ: sayfa boyutu + sıralama */}
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-[0.15em] text-neutral-500">
-              Sayfa Başına Öğe Sayısı
-            </span>
-            <SelectField
-              label="Sayfa başına öğe sayısı"
-              defaultValue="20"
-              options={PAGE_SIZE_OPTIONS}
-            />
-          </label>
-          <label className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-[0.15em] text-neutral-500">
-              Sıralama Ölçütü
-            </span>
-            <SelectField
-              label="Sıralama ölçütü"
-              defaultValue="featured"
-              options={SORT_OPTIONS}
-            />
-          </label>
-        </div>
       </div>
 
       {/* Ürünler: liste veya ızgara görünümü */}
-      {isListView ? (
+      {products.length === 0 ? (
+        <p className="mt-12 text-center text-sm text-neutral-500">
+          Bu kategoride henüz ürün bulunmuyor.
+        </p>
+      ) : isListView ? (
         <ul
           key="list"
           className="mt-8 flex animate-fade-in-up flex-col divide-y divide-neutral-800"
@@ -121,52 +81,6 @@ const VIEW_MODES: { mode: ViewMode; label: string; icon: React.ReactNode }[] = [
   { mode: "list", label: "Liste görünümü", icon: <ListIcon /> },
 ];
 
-function FilterButton({ label }: { label: string }) {
-  return (
-    <button
-      type="button"
-      className="flex cursor-pointer items-center gap-2 border border-neutral-800 bg-neutral-900 px-5 py-2.5 text-xs font-medium uppercase tracking-[0.2em] text-neutral-300 transition-colors hover:border-neutral-600 hover:text-white"
-    >
-      {label}
-      <ChevronDownIcon className="h-3.5 w-3.5 text-neutral-500" />
-    </button>
-  );
-}
-
-type SelectOption = {
-  value: string;
-  label: string;
-};
-
-type SelectFieldProps = {
-  label: string;
-  defaultValue: string;
-  options: SelectOption[];
-};
-
-function SelectField({ label, defaultValue, options }: SelectFieldProps) {
-  return (
-    <div className="relative">
-      <select
-        defaultValue={defaultValue}
-        aria-label={label}
-        className="cursor-pointer appearance-none border border-neutral-800 bg-neutral-900 py-2.5 pl-3 pr-8 text-xs font-medium uppercase tracking-[0.15em] text-neutral-300 outline-none transition-colors hover:border-neutral-600 focus:border-white"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDownIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-500" />
-    </div>
-  );
-}
-
-type IconProps = {
-  className?: string;
-};
-
 function GridIcon({
   columns,
   className = "h-4 w-4",
@@ -197,23 +111,6 @@ function ListIcon({ className = "h-4 w-4" }: { className?: string }) {
       aria-hidden="true"
     >
       <path d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon({ className }: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
     </svg>
   );
 }

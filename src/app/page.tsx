@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import HeroCta from "@/components/HeroCta";
 import ProductCard from "@/components/ProductCard";
-import { MOCK_PRODUCTS } from "@/data/products";
+import { getProducts } from "@/services/productService";
 
 type Category = {
   name: string;
@@ -10,12 +10,15 @@ type Category = {
 };
 
 const CATEGORIES: Category[] = [
-  { name: "GIYIM", href: "/categories/giyim" },
-  { name: "AKSESUAR", href: "/categories/aksesuar" },
-  { name: "ÇANTA", href: "/categories/canta" },
+  { name: "ÇANTA", href: "/kategori/canta" },
+  { name: "CÜZDAN", href: "/kategori/cuzdan" },
+  { name: "KEMER", href: "/kategori/kemer" },
+  { name: "AKSESUAR", href: "/kategori/aksesuar" },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const products = await getProducts();
+
   return (
     <main className="flex flex-1 flex-col">
       {/* Hero: baskın sola hizalı tipografi */}
@@ -46,7 +49,7 @@ export default function Home() {
           <div className="flex flex-wrap items-center gap-4">
             <HeroCta />
             <Link
-              href="/categories/yeni-gelenler"
+              href="/kategori/yeni-gelenler"
               className="bg-[#C6213A] px-8 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white transition-colors hover:bg-[#a91b30]"
             >
               YENİ GELENLER
@@ -72,7 +75,7 @@ export default function Home() {
 
           {/* Ürün ızgarası: 1 → 2 → 4 sütun */}
           <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {MOCK_PRODUCTS.map((product) => (
+            {products.map((product) => (
               <li key={product.id}>
                 <ProductCard product={product} />
               </li>
@@ -89,14 +92,14 @@ export default function Home() {
               Kategoriler
             </h2>
             <Link
-              href="/categories/yeni-gelenler"
+              href="/kategori/yeni-gelenler"
               className="text-xs font-medium uppercase tracking-[0.25em] text-zinc-400 transition-colors hover:text-white"
             >
               Tümünü Gör
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-4">
             {CATEGORIES.map((category, index) => (
               <CategoryCard
                 key={category.name}

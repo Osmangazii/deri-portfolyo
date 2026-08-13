@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import AddToCartButton from "@/components/AddToCartButton";
 import ProductGallery from "@/components/ProductGallery";
 import { formatPrice } from "@/components/ProductCard";
-import { getProductBySlug, MOCK_PRODUCTS } from "@/data/products";
+import { MOCK_PRODUCTS } from "@/data/products";
+import { getProductBySlug } from "@/services/productService";
 
 type ProductPageProps = {
   params: Promise<{ slug: string }>;
@@ -16,7 +18,7 @@ export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
 
   if (!product) {
     return { title: "Ürün Bulunamadı" };
@@ -30,7 +32,7 @@ export async function generateMetadata({
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
 
   if (!product) {
     notFound();
@@ -47,7 +49,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {/* Sağ: ürün detayları ve aksiyonlar */}
         <div className="flex flex-col">
           <p className="text-xs font-medium uppercase tracking-[0.25em] text-neutral-500">
-            {product.category}
+            {product.category.toLocaleUpperCase("tr-TR")}
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             {product.title}
@@ -98,12 +100,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
           {/* Sepete ekle + favorilere ekle */}
           <div className="mt-10 flex gap-3">
-            <button
-              type="button"
+            <AddToCartButton
+              product={product}
               className="flex-1 cursor-pointer bg-white py-4 text-sm font-semibold uppercase tracking-[0.25em] text-black transition-colors hover:bg-neutral-200"
-            >
-              SEPETE EKLE
-            </button>
+            />
             <button
               type="button"
               aria-label="Favorilere ekle"

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import AddToCartButton from "@/components/AddToCartButton";
 import type { Product } from "@/types/product";
 
 type ProductCardProps = {
@@ -40,7 +41,7 @@ export default function ProductCard({
         <div className="flex flex-1 flex-col">
           <Link href={`/product/${product.slug}`} className="block">
             <p className="text-[0.65rem] font-medium uppercase tracking-[0.25em] text-neutral-500">
-              {product.category}
+              {product.category.toLocaleUpperCase("tr-TR")}
             </p>
             <h3 className="mt-1.5 text-lg font-medium text-white transition-colors duration-300 group-hover:text-neutral-300">
               {product.title}
@@ -100,7 +101,7 @@ export default function ProductCard({
       {/* Bilgi */}
       <div className="mt-4">
         <p className="text-[0.65rem] font-medium uppercase tracking-[0.25em] text-neutral-500 transition-colors duration-300 group-hover:text-neutral-300">
-          {product.category}
+          {product.category.toLocaleUpperCase("tr-TR")}
         </p>
         <h3 className="mt-1.5 truncate text-sm font-medium text-neutral-100 transition-colors duration-300 group-hover:text-white">
           {product.title}
@@ -108,6 +109,10 @@ export default function ProductCard({
         <p className="mt-1 text-sm text-neutral-400">
           {formatPrice(product.price)}
         </p>
+        <AddToCartButton
+          product={product}
+          className="mt-3 w-full cursor-pointer border border-neutral-800 py-2.5 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-neutral-200 transition-colors hover:border-white hover:bg-white hover:text-black"
+        />
       </div>
     </div>
   );

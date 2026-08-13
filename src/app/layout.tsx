@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Suspense } from "react";
+import CartDrawer from "@/components/CartDrawer";
+import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import { CartProvider } from "@/context/CartContext";
 import "./globals.css";
 
 const brandFont = localFont({
@@ -17,8 +21,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className={`min-h-full flex flex-col ${brandFont.variable}`}>
-        <Header />
-        {children}
+        <CartProvider>
+          <Suspense fallback={null}>
+            <Header />
+          </Suspense>
+          {children}
+          <Footer />
+          <CartDrawer />
+        </CartProvider>
       </body>
     </html>
   );

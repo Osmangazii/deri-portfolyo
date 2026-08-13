@@ -1,7 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    // Harici placeholder URL'leri ve dinamik görsel bağlantıları için
+    // tüm HTTPS domainlerine izin ver (yoksa next/image 400 döner).
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

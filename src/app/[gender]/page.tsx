@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import CategoryView from "@/components/CategoryView";
-import { getProductsByGender } from "@/data/products";
+import { getProductsFiltered } from "@/services/productService";
 import type { Gender } from "@/types/product";
 
 type GenderPageProps = {
@@ -43,7 +43,8 @@ export default async function GenderPage({ params }: GenderPageProps) {
     notFound();
   }
 
-  const products = getProductsByGender(gender);
+  // Tek kaynak filtre: cinsiyet (+unisex) — .in('gender', [gender, 'unisex'])
+  const products = await getProductsFiltered({ gender });
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 pb-10 pt-24 sm:px-6 sm:pb-14 sm:pt-36 lg:px-8">
