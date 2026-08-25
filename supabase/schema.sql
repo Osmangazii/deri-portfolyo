@@ -77,18 +77,23 @@ alter table public.profiles enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
 
--- Ürünler: herkes okuyabilir, yalnızca admin yazabilir
+-- Ürünler: herkes okuyabilir; yazma işlemleri (INSERT/UPDATE/DELETE) yalnızca
+-- giriş yapmış (authenticated) kullanıcılara açıktır.
 create policy "products_select_public" on public.products
   for select using (true);
 
-create policy "products_insert_admin" on public.products
-  for insert with check (public.is_admin());
+drop policy if exists "products_insert_admin" on public.products;
+drop policy if exists "products_update_admin" on public.products;
+drop policy if exists "products_delete_admin" on public.products;
 
-create policy "products_update_admin" on public.products
-  for update using (public.is_admin()) with check (public.is_admin());
+create policy "products_insert_authenticated" on public.products
+  for insert with check (auth.role() = 'authenticated');
 
-create policy "products_delete_admin" on public.products
-  for delete using (public.is_admin());
+create policy "products_update_authenticated" on public.products
+  for update using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+create policy "products_delete_authenticated" on public.products
+  for delete using (auth.role() = 'authenticated');
 
 -- Profiller: kullanıcı kendi profilini okur/günceller, admin tümünü okur
 create policy "profiles_select_own" on public.profiles

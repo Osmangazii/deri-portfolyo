@@ -43,8 +43,9 @@ export default function ProductGallery({
         ))}
       </div>
 
-      {/* Ana görsel (hover'da zoom) */}
-      <div className="group relative aspect-3/4 w-full flex-1 cursor-zoom-in overflow-hidden bg-neutral-900">
+      {/* Ana görsel (hover'da zoom) — kilitli baskın boyut: aspect + min-height,
+          ilk yüklemede tam boyutta görünür (akordeon açılışına bağlı değil) */}
+      <div className="group relative aspect-3/4 min-h-137.5 min-w-0 w-full flex-1 cursor-zoom-in overflow-hidden bg-neutral-900 lg:min-h-162.5">
         {activeImage && (
           <Image
             src={activeImage}

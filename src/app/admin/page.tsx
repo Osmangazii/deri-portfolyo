@@ -2,15 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { formatPrice } from "@/components/ProductCard";
+import { supabase } from "@/lib/supabase/client";
 import {
   deleteProduct,
   getAllProducts,
   insertProduct,
   toggleProductStock,
 } from "@/services/productService";
+import { uploadProductImages } from "@/services/storageService";
 import type { Product } from "@/types/database";
 import type { Gender } from "@/types/product";
 
@@ -31,8 +34,10 @@ const INPUT_CLASS =
   "w-full border border-neutral-800 bg-neutral-950 px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-neutral-600 focus:border-neutral-600";
 
 export default function AdminPage() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -76,6 +81,43 @@ export default function AdminPage() {
     };
   }, []);
 
+  // Oturum kontrolü: oturum yoksa /admin/login'e yönlendir
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) {
+        return;
+      }
+      if (!data.session) {
+        router.replace("/admin/login");
+        return;
+      }
+      setIsReady(true);
+    };
+
+    checkSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session) {
+          router.replace("/admin/login");
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+      authListener.subscription.unsubscribe();
+    };
+  }, [router]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.replace("/admin/login");
+  };
+
   const handleToggleStock = async (product: Product) => {
     const next = !product.in_stock;
     try {
@@ -101,6 +143,14 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : "Ürün silinemedi.");
     }
   };
+
+  if (!isReady) {
+    return (
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center px-4 pb-10 pt-24 sm:px-6 sm:pb-14 sm:pt-36 lg:px-8">
+        <p className="text-sm text-neutral-500">Oturum kontrol ediliyor…</p>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 pb-10 pt-24 sm:px-6 sm:pb-14 sm:pt-36 lg:px-8">
@@ -133,6 +183,13 @@ export default function AdminPage() {
             className="cursor-pointer bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-black transition-colors hover:bg-neutral-200"
           >
             Ürün Ekle
+          </button>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="cursor-pointer border border-red-900/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-red-400 transition-colors hover:bg-red-950/40 hover:text-red-300"
+          >
+            Çıkış Yap
           </button>
         </div>
       </div>
@@ -274,10 +331,11 @@ function AddProductModal({
     category: "canta",
     gender: "unisex" as Gender,
     description: "",
-    images: "",
     in_stock: true,
   });
   const [slugTouched, setSlugTouched] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -287,6 +345,28 @@ function AddProductModal({
       title: value,
       slug: slugTouched ? prev.slug : slugify(value),
     }));
+  };
+
+  const handleFilesSelected = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) {
+      return;
+    }
+    setSelectedFiles((prev) => [...prev, ...files]);
+    setPreviews((prev) => [
+      ...prev,
+      ...files.map((file) => URL.createObjectURL(file)),
+    ]);
+    // Aynı dosyanın yeniden seçilebilmesi için input'u sıfırla
+    event.target.value = "";
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => {
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -299,6 +379,12 @@ function AddProductModal({
     setFormError(null);
     setIsSubmitting(true);
     try {
+      // Önce görselleri Storage'a yükle, ardından public URL'leri kaydet
+      const uploadedUrls =
+        selectedFiles.length > 0
+          ? await uploadProductImages(selectedFiles)
+          : [];
+
       const product = await insertProduct({
         title: form.title.trim(),
         slug: form.slug.trim(),
@@ -306,12 +392,13 @@ function AddProductModal({
         price,
         category: form.category,
         gender: form.gender,
-        images: form.images
-          .split(",")
-          .map((url) => url.trim())
-          .filter(Boolean),
+        images: uploadedUrls,
         in_stock: form.in_stock,
       });
+
+      previews.forEach((url) => URL.revokeObjectURL(url));
+      setSelectedFiles([]);
+      setPreviews([]);
       onAdded(product);
       onClose();
     } catch (err) {
@@ -463,17 +550,49 @@ function AddProductModal({
 
           <div>
             <label className="mb-1.5 block text-[0.65rem] uppercase tracking-[0.2em] text-neutral-500">
-              Görsel URL&apos;leri
+              Görseller
             </label>
-            <input
-              type="text"
-              value={form.images}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, images: e.target.value }))
-              }
-              className={INPUT_CLASS}
-              placeholder="/images/products/… (virgülle ayırın)"
-            />
+            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-neutral-800 bg-neutral-950 px-4 py-8 text-center transition-colors hover:border-neutral-600">
+              <span className="text-xs uppercase tracking-[0.15em] text-neutral-400">
+                Görsel Seç
+              </span>
+              <span className="text-[0.65rem] text-neutral-600">
+                Birden fazla dosya seçebilirsiniz (JPG, PNG, WebP, AVIF)
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFilesSelected}
+              />
+            </label>
+
+            {previews.length > 0 && (
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {previews.map((preview, index) => (
+                  <div
+                    key={preview}
+                    className="relative aspect-3/4 overflow-hidden border border-neutral-800"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- blob önizleme URL'si next/image ile çalışmaz */}
+                    <img
+                      src={preview}
+                      alt={`Önizleme ${index + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      aria-label={`Önizleme ${index + 1} görselini kaldır`}
+                      onClick={() => removeFile(index)}
+                      className="absolute right-1 top-1 flex h-5 w-5 cursor-pointer items-center justify-center bg-black/70 text-white transition-colors hover:bg-black"
+                    >
+                      <CloseIcon className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-300">
@@ -501,7 +620,7 @@ function AddProductModal({
               disabled={isSubmitting}
               className="cursor-pointer bg-white px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-black transition-colors hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSubmitting ? "Ekleniyor…" : "Ürünü Ekle"}
+              {isSubmitting ? "Yükleniyor…" : "Ürünü Ekle"}
             </button>
           </div>
         </form>

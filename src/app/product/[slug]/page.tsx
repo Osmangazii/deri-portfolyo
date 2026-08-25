@@ -40,14 +40,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 px-4 pb-10 pt-24 sm:px-6 sm:pb-16 sm:pt-36 lg:px-8">
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
+      {/* Sıkı sütun tanımı + items-start: sol sütun sağ sütunun yüksekliğinden bağımsız */}
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-16">
         {/* Sol: görsel galerisi (masaüstünde yapışkan) */}
-        <div className="lg:sticky lg:top-32 lg:self-start">
+        <div className="min-w-0 lg:sticky lg:top-32">
           <ProductGallery images={product.images} title={product.title} />
         </div>
 
         {/* Sağ: ürün detayları ve aksiyonlar */}
-        <div className="flex flex-col">
+        <div className="flex min-w-0 flex-col">
           <p className="text-xs font-medium uppercase tracking-[0.25em] text-neutral-500">
             {product.category.toLocaleUpperCase("tr-TR")}
           </p>
