@@ -1,6 +1,7 @@
 "use client";
 
 import { useCart } from "@/context/CartContext";
+import { useStore } from "@/context/StoreContext";
 import type { Product } from "@/types/product";
 
 type AddToCartButtonProps = {
@@ -12,9 +13,10 @@ type AddToCartButtonProps = {
 export default function AddToCartButton({
   product,
   className,
-  label = "SEPETE EKLE",
+  label,
 }: AddToCartButtonProps) {
   const { addToCart } = useCart();
+  const { t } = useStore();
 
   return (
     <button
@@ -22,7 +24,7 @@ export default function AddToCartButton({
       onClick={() => addToCart(product)}
       className={className}
     >
-      {label}
+      {label ?? t("Sepete Ekle")}
     </button>
   );
 }

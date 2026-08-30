@@ -5,6 +5,7 @@ import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { CartProvider } from "@/context/CartContext";
+import { StoreProvider } from "@/context/StoreContext";
 import "./globals.css";
 
 const brandFont = localFont({
@@ -21,14 +22,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className={`min-h-full flex flex-col ${brandFont.variable}`}>
-        <CartProvider>
-          <Suspense fallback={null}>
-            <Header />
-          </Suspense>
-          {children}
-          <Footer />
-          <CartDrawer />
-        </CartProvider>
+        <StoreProvider>
+          <CartProvider>
+            <Suspense fallback={null}>
+              <Header />
+            </Suspense>
+            {children}
+            <Footer />
+            <CartDrawer />
+          </CartProvider>
+        </StoreProvider>
       </body>
     </html>
   );

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { formatPrice } from "@/components/ProductCard";
 import { supabase } from "@/lib/supabase/client";
+import { useStore } from "@/context/StoreContext";
 import {
   deleteProduct,
   getAllProducts,
@@ -35,6 +36,7 @@ const INPUT_CLASS =
 
 export default function AdminPage() {
   const router = useRouter();
+  const { t } = useStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isReady, setIsReady] = useState(false);
@@ -250,7 +252,7 @@ export default function AdminPage() {
                           product.in_stock ? "bg-emerald-400" : "bg-red-400"
                         }`}
                       />
-                      {product.in_stock ? "Stokta" : "Tükendi"}
+                      {product.in_stock ? t("Stokta").toLocaleUpperCase("tr-TR") : t("Tükendi").toLocaleUpperCase("tr-TR")}
                     </span>
                   </td>
                   <td className="py-4">

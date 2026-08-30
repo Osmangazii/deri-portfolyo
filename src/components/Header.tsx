@@ -5,6 +5,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import MobileMenu from "@/components/MobileMenu";
 import { useCart } from "@/context/CartContext";
+import { useStore } from "@/context/StoreContext";
+import type { Currency, Language } from "@/context/StoreContext";
 
 type NavLink = {
   label: string;
@@ -29,12 +31,15 @@ const WISHLIST_COUNT = 2;
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const closeMenu = () => setIsMenuOpen(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const isHomepage = pathname === "/";
-  const showControls = !isHomepage || isScrolled;
+  // Ana sayfada en üstte: yalnızca hover'da; scroll'da ve alt sayfalarda her zaman görünür
+  const showControls = !isHomepage || isScrolled || isHovered;
   const { totalItemCount, toggleCart } = useCart();
+  const { currency, language, setCurrency, setLanguage } = useStore();
 
   // Aktif cinsiyet: cinsiyet rotasından (/kadin vb.) veya ?gender= parametresinden
   const queryGender = searchParams.get("gender");
@@ -80,7 +85,9 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed left-0 right-0 top-0 z-50 w-full transition-colors duration-500 ease-in-out ${
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={`fixed left-0 right-0 top-0 z-50 w-full transition-all duration-300 ease-in-out ${
         showControls
           ? `border-b border-white/10 backdrop-blur-md ${isHomepage ? "bg-black/80" : "bg-black/90"} `
           : "border-b border-transparent bg-transparent"
@@ -91,10 +98,10 @@ export default function Header() {
         {/* Sol: hamburger (mobil) + cinsiyet sekmeleri (md+) */}
         <div
           inert={!showControls}
-          className={`flex items-center transition-opacity duration-500 ease-in-out ${
+          className={`flex items-center transition-all duration-300 ease-in-out ${
             showControls
-              ? "pointer-events-auto opacity-100"
-              : "pointer-events-none opacity-0"
+              ? "pointer-events-auto translate-y-0 opacity-100"
+              : "pointer-events-none -translate-y-1 opacity-0"
           }`}
         >
           <button
@@ -130,15 +137,37 @@ export default function Header() {
         {/* Orta: logo */}
         <Logo className="justify-self-center" />
 
-        {/* Sağ: arama (md+) + aksiyon ikonları (mobilde yalnızca wishlist + sepet) */}
+        {/* Sağ: dil/para birimi + arama + aksiyon ikonları (mobilde yalnızca wishlist + sepet) */}
         <div
           inert={!showControls}
-          className={`flex items-center justify-self-end gap-3 transition-opacity duration-500 ease-in-out sm:gap-5 ${
+          className={`flex items-center justify-self-end gap-3 transition-all duration-300 ease-in-out sm:gap-5 ${
             showControls
-              ? "pointer-events-auto opacity-100"
-              : "pointer-events-none opacity-0"
+              ? "pointer-events-auto translate-y-0 opacity-100"
+              : "pointer-events-none -translate-y-1 opacity-0"
           }`}
         >
+          {/* Dil & para birimi seçicileri (lg+) */}
+          <div className="hidden items-center gap-1 lg:flex">
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as Currency)}
+              aria-label="Para birimi"
+              className="cursor-pointer appearance-none border border-white/10 bg-white/5 px-2 py-2 text-xs uppercase tracking-widest text-neutral-200 outline-none transition-colors hover:border-white/40"
+            >
+              <option value="TRY">₺ TRY</option>
+              <option value="USD">$ USD</option>
+              <option value="EUR">€ EUR</option>
+            </select>
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as Language)}
+              aria-label="Dil"
+              className="cursor-pointer appearance-none border border-white/10 bg-white/5 px-2 py-2 text-xs uppercase tracking-widest text-neutral-200 outline-none transition-colors hover:border-white/40"
+            >
+              <option value="TR">TR</option>
+              <option value="EN">EN</option>
+            </select>
+          </div>
           {/* Arama çubuğu (masaüstü) */}
           <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 backdrop-blur-sm transition-colors focus-within:border-white/40 md:flex">
             <SearchIcon className="h-4 w-4 text-neutral-300" />
@@ -161,12 +190,14 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Alt bar: ana kategoriler (yalnızca md+, ana sayfada scroll ile belirir) */}
+      {/* Alt bar: ana kategoriler (yalnızca md+, ana sayfada hover/scroll ile belirir) */}
       <nav
         aria-label="Alt kategoriler"
         inert={!showControls}
-        className={`hidden h-11 items-center gap-5 overflow-x-auto border-t border-white/10 px-4 scrollbar-none transition-opacity duration-500 ease-in-out md:flex md:justify-center md:gap-8 [&::-webkit-scrollbar]:hidden ${
-          showControls ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+        className={`hidden h-11 items-center gap-5 overflow-x-auto border-t border-white/10 px-4 scrollbar-none transition-all duration-300 ease-in-out md:flex md:justify-center md:gap-8 [&::-webkit-scrollbar]:hidden ${
+          showControls
+            ? "pointer-events-auto translate-y-0 opacity-100"
+            : "pointer-events-none -translate-y-1 opacity-0"
         }`}
       >
         {CATEGORY_LINKS.map((link) => (

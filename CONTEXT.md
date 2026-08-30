@@ -59,6 +59,7 @@ El yapımı deri eşyaların (çanta, cüzdan, aksesuar) sergilendiği minimalis
 - [x] Storage dosya adı sanitizasyonu — Türkçe/özel karakterler temizleniyor, "Invalid key" hatası giderildi
 - [x] Ürün galerisi layout kararlılığı — sıkı grid sütunları (`minmax(0,1fr)`), `min-w-0`, SSR'da ayrılmış aspect alanı
 - [x] Görsel boyutu kilitlendi — `aspect-3/4` + `min-h-137.5 lg:min-h-162.5` (550/650px), grid'de `items-start`
+- [x] Header hover-reveal + global dil/para birimi context'i (`StoreContext`) — localStorage kalıcılığı, fiyat çevirisi ve çeviri sözlüğü
 - [x] Hero baskın sola-hizalı tipografi düzenine geçirildi — dev `LOGO` tipografisi, vinyet overlay, çift aksiyon butonu
 - [x] Ana sayfaya **ÖZEL KOLEKSİYON** ürün vitrini eklendi — mobilde yatay kaydırmalı şerit, sm+ ızgara; kartlar görsel + başlık + fiyat (indirimde üstü çizili eski fiyat)
 
@@ -68,6 +69,12 @@ El yapımı deri eşyaların (çanta, cüzdan, aksesuar) sergilendiği minimalis
 - [ ] Gerçek görseller ve logonun eklenmesi
 
 ## Değişiklik Kaydı
+
+- **Header hover-reveal (temiz uygulama):** Global `mousemove` listener'ı ve görünmez overlay tetikleyici div'ler tamamen kaldırıldı; yerine React state + header container üzerinde saf `onMouseEnter={() => setIsHovered(true)}` / `onMouseLeave={() => setIsHovered(false)}` deseni geldi. `isHovered` state'i `showControls = !isHomepage || isScrolled || isHovered` formülüne eklendi. Davranış: (1) **Ana sayfa en üstte (`scrollY === 0`):** varsayılan yalnızca ortalanmış LOGO görünür; fare header alanına girince üç eleman grubu (sol sekmeler/hamburger, sağ arama+ikonlar, alt kategori barı) `transition-all duration-300 ease-in-out` ile yerinde yumuşakça belirir (`opacity-0 translate-y-1` → `opacity-100 translate-y-0`), fare çıkınca tekrar gizlenir; header arka planı `bg-transparent` ↔ `bg-black/80 backdrop-blur-md border-b border-white/10` arasında geçiş yapar. (2) **Scroll > 100px:** `isScrolled` hover'dan bağımsız kontrolleri kalıcı görünür tutar. (3) **Alt sayfalar:** hover/scroll mantığı tamamen devre dışı — navbar her zaman tam görünür. Yapı/konum scroll durumundan bağımsız sabit (layout shift yok).
+
+- **Global StoreContext (`src/context/StoreContext.tsx`):** `currency` ('TRY'|'USD'|'EUR') ve `language` ('TR'|'EN') state'leri; `localStorage` kalıcılığı (okuma hydration sonrası `setTimeout` ile — lint kuralına uygun; yazma effect ile). `formatPrice(priceInTRY)` — standart kur çarpanları (USD 0.03, EUR 0.028) + `Intl.NumberFormat` (TRY → tr-TR, diğerleri → en-US, `₺1.850` / `$56` / `€52`). `t(key)` — TR/EN sözlüğü (Sepete Ekle, Kargo & Teslimat, Bakım Talimatları, Stokta, Tükendi, Sepetiniz, Ara Toplam vb.; bilinmeyen anahtar aynen döner). Provider `layout.tsx`'te `CartProvider` dışına sarıldı.
+
+- **UI entegrasyonları:** Header sağ grubuna **dil (TR/EN) + para birimi (₺/$/€) seçicileri** eklendi (lg+, cam stil). Yeni `Price` client bileşeni (server component içinde kullanılabilir) — ProductCard (grid+list), ürün detay sayfası ve CartDrawer fiyatları store'a bağlandı. Yeni client `Accordion` bileşeni — ürün detay akordeon başlıkları `t()` ile çevriliyor. AddToCartButton "Sepete Ekle" çevirili; CartDrawer etiketleri (Sepetiniz, boş durum, Alışverişe Başla, Ara Toplam, WhatsApp CTA) ve admin stok rozetleri (Stokta/Tükendi) çeviri kullanıyor.
 
 - **Görsel boyutu kilitleme (ilk yüklemede tam boy):** `ProductGallery` ana görsel kabına `aspect-3/4` yanında **`min-h-137.5 lg:min-h-162.5`** (550px / 650px) eklendi — kutu artık baştan itibaren baskın ve kilitli boyutta; `w-full flex-1` + `object-cover` korundu, akordeon (Kargo & Teslimat) açılıp kapanmasından bağımsız. `product/[slug]/page.tsx` grid'ine **`lg:items-start`** eklendi (sol sütun sağ sütunun yüksekliğiyle gerilip büzülmez; eski `lg:self-start` kaldırıldı — gereksizdi). Önceki turdaki `minmax(0,1fr)` sütunları + `min-w-0` korunuyor.
 

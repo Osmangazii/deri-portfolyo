@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import AddToCartButton from "@/components/AddToCartButton";
+import Price from "@/components/Price";
 import type { Product } from "@/types/product";
 
 type ProductCardProps = {
@@ -63,7 +64,7 @@ export default function ProductCard({
               {product.description}
             </p>
             <p className="mt-4 text-lg font-medium text-white">
-              {formatPrice(product.price)}
+              <Price value={product.price} />
             </p>
           </Link>
         </div>
@@ -107,7 +108,7 @@ export default function ProductCard({
           {product.title}
         </h3>
         <p className="mt-1 text-sm text-neutral-400">
-          {formatPrice(product.price)}
+          <Price value={product.price} />
         </p>
         <AddToCartButton
           product={product}

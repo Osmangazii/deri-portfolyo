@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import type { CartItem } from "@/context/CartContext";
-import { formatPrice } from "@/components/ProductCard";
+import { useStore } from "@/context/StoreContext";
 
 export default function CartDrawer() {
   const { items, isCartOpen, subtotal, closeCart } = useCart();
+  const { formatPrice, t } = useStore();
 
   // Sepet açıkken arka plan sayfasının kaymasını engelle
   useEffect(() => {
@@ -47,7 +48,7 @@ export default function CartDrawer() {
         {/* Başlık */}
         <div className="flex items-center justify-between border-b border-neutral-800 px-5 py-4">
           <h2 className="text-sm font-semibold uppercase tracking-[0.3em] text-white">
-            SEPETİNİZ
+            {t("Sepetiniz").toLocaleUpperCase("tr-TR")}
           </h2>
           <button
             type="button"
@@ -62,13 +63,13 @@ export default function CartDrawer() {
         {/* Gövde */}
         {items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 text-center">
-            <p className="text-sm text-neutral-400">Sepetiniz henüz boş.</p>
+            <p className="text-sm text-neutral-400">{t("Sepetiniz henüz boş.")}</p>
             <Link
               href="/kategori/yeni-gelenler"
               onClick={closeCart}
               className="bg-white px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-black transition-colors hover:bg-neutral-200"
             >
-              Alışverişe Başla
+              {t("Alışverişe Başla").toLocaleUpperCase("tr-TR")}
             </Link>
           </div>
         ) : (
@@ -84,7 +85,7 @@ export default function CartDrawer() {
           <div className="border-t border-neutral-800 px-5 py-5">
             <div className="flex items-center justify-between">
               <span className="text-xs uppercase tracking-[0.2em] text-neutral-400">
-                Ara Toplam
+                {t("Ara Toplam").toLocaleUpperCase("tr-TR")}
               </span>
               <span className="text-base font-semibold text-white">
                 {formatPrice(subtotal)}
@@ -94,7 +95,7 @@ export default function CartDrawer() {
               type="button"
               className="mt-4 w-full cursor-pointer bg-white py-4 text-sm font-semibold uppercase tracking-[0.2em] text-black transition-colors hover:bg-[#C9A227]"
             >
-              SİPARİŞİ TAMAMLA (WHATSAPP)
+              {t("SİPARİŞİ TAMAMLA (WHATSAPP)")}
             </button>
           </div>
         )}
@@ -105,6 +106,7 @@ export default function CartDrawer() {
 
 function CartItemRow({ item }: { item: CartItem }) {
   const { updateQuantity, removeFromCart } = useCart();
+  const { formatPrice } = useStore();
   const image = item.product.images[0];
 
   return (

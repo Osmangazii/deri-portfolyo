@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import Accordion from "@/components/Accordion";
 import AddToCartButton from "@/components/AddToCartButton";
+import Price from "@/components/Price";
 import ProductGallery from "@/components/ProductGallery";
-import { formatPrice } from "@/components/ProductCard";
 import { MOCK_PRODUCTS } from "@/data/products";
 import { getProductBySlug } from "@/services/productService";
 
@@ -56,7 +57,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {product.title}
           </h1>
           <p className="mt-4 text-xl text-neutral-300">
-            {formatPrice(product.price)}
+            <Price value={product.price} />
           </p>
 
           <p className="mt-8 leading-relaxed text-neutral-400">
@@ -130,34 +131,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </div>
       </div>
     </main>
-  );
-}
-
-function Accordion({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <details className="group">
-      <summary className="flex cursor-pointer list-none items-center justify-between py-5 text-sm font-medium uppercase tracking-[0.2em] text-neutral-200 transition-colors hover:text-white">
-        {title}
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          className="h-4 w-4 text-neutral-500 transition-transform duration-300 group-open:rotate-45"
-          aria-hidden="true"
-        >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-      </summary>
-      <p className="pb-5 text-sm leading-relaxed text-neutral-400">{children}</p>
-    </details>
   );
 }
 
