@@ -54,7 +54,7 @@ export default function CategoryView({ products }: { products: Product[] }) {
         >
           {products.map((product) => (
             <li key={product.id} className="py-6 first:pt-0">
-              <ProductCard product={product} showActions variant="list" />
+              <ProductCard product={product} hideIncele variant="list" />
             </li>
           ))}
         </ul>
@@ -65,7 +65,7 @@ export default function CategoryView({ products }: { products: Product[] }) {
         >
           {products.map((product) => (
             <li key={product.id}>
-              <ProductCard product={product} showActions />
+              <ProductCard product={product} hideIncele />
             </li>
           ))}
         </ul>
