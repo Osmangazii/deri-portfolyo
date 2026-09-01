@@ -40,6 +40,14 @@ const TRANSLATIONS: Record<string, Record<Language, string>> = {
     TR: "SİPARİŞİ TAMAMLA (WHATSAPP)",
     EN: "COMPLETE ORDER (WHATSAPP)",
   },
+  "Ücretsiz kargo için {{amount}} daha ekleyin": {
+    TR: "Ücretsiz kargo için {{amount}} daha ekleyin",
+    EN: "Add {{amount}} more for free shipping",
+  },
+  "Tebrikler, Kargonuz Ücretsiz! 🎉": {
+    TR: "Tebrikler, Kargonuz Ücretsiz! 🎉",
+    EN: "Congratulations, Your Shipping Is Free! 🎉",
+  },
 };
 
 const CURRENCY_STORAGE_KEY = "store-currency";

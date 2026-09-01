@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
+import FreeShippingBar from "@/components/FreeShippingBar";
 import { useCart } from "@/context/CartContext";
 import type { CartItem } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
@@ -59,6 +60,9 @@ export default function CartDrawer() {
             <CloseIcon className="h-5 w-5" />
           </button>
         </div>
+
+        {/* Ücretsiz kargo ilerleme çubuğu (başlığın hemen altında) */}
+        {items.length > 0 && <FreeShippingBar />}
 
         {/* Gövde */}
         {items.length === 0 ? (
