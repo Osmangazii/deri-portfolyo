@@ -112,6 +112,8 @@ export type ProductInput = {
   slug: string;
   description: string;
   price: number;
+  /** İndirim yüzdesi (0-100). Belirtilmezse DB default'u (0) kullanılır. */
+  discount_percent?: number;
   category: string;
   gender: Gender;
   images: string[];
@@ -155,6 +157,36 @@ export async function toggleProductStock(
   const { error } = await supabase
     .from("products")
     .update({ in_stock: inStock })
+    .eq("id", productId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+/** Ürünün taban fiyatını günceller (indirim ayrı yönetilir). */
+export async function updateProductPrice(
+  productId: string,
+  price: number,
+): Promise<void> {
+  const { error } = await supabase
+    .from("products")
+    .update({ price })
+    .eq("id", productId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+/** Ürünün indirim yüzdesini günceller (0 = indirim kaldır). */
+export async function updateProductDiscount(
+  productId: string,
+  discountPercent: number,
+): Promise<void> {
+  const { error } = await supabase
+    .from("products")
+    .update({ discount_percent: discountPercent })
     .eq("id", productId);
 
   if (error) {

@@ -12,6 +12,8 @@ export interface Product {
   slug: string;
   description: string;
   price: number;
+  /** İndirim yüzdesi (0-100); 0 = indirim yok. DB default'u 0'dır. */
+  discount_percent: number;
   category: string;
   gender: Gender;
   images: string[];

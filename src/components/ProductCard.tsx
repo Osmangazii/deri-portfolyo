@@ -3,6 +3,7 @@ import Link from "next/link";
 import AddToCartButton from "@/components/AddToCartButton";
 import Price from "@/components/Price";
 import QuickActions from "@/components/QuickActions";
+import { getDiscountedPrice } from "@/lib/pricing";
 import type { Product } from "@/types/product";
 
 type ProductCardProps = {
@@ -18,6 +19,9 @@ export default function ProductCard({
   variant = "grid",
 }: ProductCardProps) {
   const primaryImage = product.images[0];
+  const discount = product.discount_percent ?? 0;
+  const hasDiscount = discount > 0;
+  const finalPrice = getDiscountedPrice(product);
 
   if (variant === "list") {
     return (
@@ -37,6 +41,11 @@ export default function ProductCard({
               )}
             </div>
           </Link>
+          {hasDiscount && (
+            <span className="absolute left-3 top-3 z-10 bg-[#C6213A] px-2 py-1 text-[0.65rem] font-bold tracking-wider text-white">
+              -%{Math.round(discount)}
+            </span>
+          )}
           <QuickActions product={product} />
         </div>
 
@@ -65,9 +74,17 @@ export default function ProductCard({
             <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-neutral-400">
               {product.description}
             </p>
-            <p className="mt-4 text-lg font-medium text-white">
-              <Price value={product.price} />
-            </p>
+            <div className="mt-4 flex flex-wrap items-baseline gap-2">
+              {hasDiscount && (
+                <Price
+                  value={product.price}
+                  className="text-base text-neutral-500 line-through"
+                />
+              )}
+              <p className="text-lg font-medium text-white">
+                <Price value={finalPrice} />
+              </p>
+            </div>
           </Link>
         </div>
       </div>
@@ -98,6 +115,11 @@ export default function ProductCard({
             )}
           </div>
         </Link>
+        {hasDiscount && (
+          <span className="absolute left-3 top-3 z-10 bg-[#C6213A] px-2 py-1 text-[0.65rem] font-bold tracking-wider text-white">
+            -%{Math.round(discount)}
+          </span>
+        )}
         <QuickActions product={product} />
       </div>
 
@@ -109,9 +131,21 @@ export default function ProductCard({
         <h3 className="mt-1.5 truncate text-sm font-medium text-neutral-100 transition-colors duration-300 group-hover:text-white">
           {product.title}
         </h3>
-        <p className="mt-1 text-sm text-neutral-400">
-          <Price value={product.price} />
-        </p>
+        <div className="mt-1 flex flex-wrap items-baseline gap-2">
+          {hasDiscount && (
+            <Price
+              value={product.price}
+              className="text-sm text-neutral-500 line-through"
+            />
+          )}
+          <p
+            className={`text-sm ${
+              hasDiscount ? "font-semibold text-white" : "text-neutral-400"
+            }`}
+          >
+            <Price value={finalPrice} />
+          </p>
+        </div>
         <AddToCartButton
           product={product}
           className="mt-3 w-full cursor-pointer border border-neutral-800 py-2.5 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-neutral-200 transition-colors hover:border-white hover:bg-white hover:text-black"

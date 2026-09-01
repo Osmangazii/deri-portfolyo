@@ -5,14 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import { formatPrice } from "@/components/ProductCard";
 import { supabase } from "@/lib/supabase/client";
 import { useStore } from "@/context/StoreContext";
+import { getDiscountedPrice } from "@/lib/pricing";
 import {
   deleteProduct,
   getAllProducts,
   insertProduct,
   toggleProductStock,
+  updateProductDiscount,
+  updateProductPrice,
 } from "@/services/productService";
 import { uploadProductImages } from "@/services/storageService";
 import type { Product } from "@/types/database";
@@ -31,6 +33,20 @@ const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: "erkek", label: "Erkek" },
 ];
 
+const CATEGORY_FILTERS = [
+  { value: "tumu", label: "Tümü" },
+  { value: "canta", label: "Çanta" },
+  { value: "cuzdan", label: "Cüzdan" },
+  { value: "kemer", label: "Kemer" },
+  { value: "aksesuar", label: "Aksesuar" },
+];
+
+/** İndirim %10/%20/%30 dışında özel bir değerse (örn. %99) "Özel %" butonunu aktif göster. */
+const isCustomDiscount = (product: Product): boolean => {
+  const discount = product.discount_percent ?? 0;
+  return discount > 0 && discount !== 10 && discount !== 20 && discount !== 30;
+};
+
 const INPUT_CLASS =
   "w-full border border-neutral-800 bg-neutral-950 px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-neutral-600 focus:border-neutral-600";
 
@@ -42,6 +58,8 @@ export default function AdminPage() {
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("tumu");
 
   const loadProducts = useCallback(async () => {
     try {
@@ -146,6 +164,61 @@ export default function AdminPage() {
     }
   };
 
+  const handlePriceSave = async (productId: string, price: number) => {
+    try {
+      await updateProductPrice(productId, price);
+      setProducts((prev) =>
+        prev.map((p) => (p.id === productId ? { ...p, price } : p)),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Fiyat güncellenemedi.");
+    }
+  };
+
+  const handleDiscountSave = async (
+    productId: string,
+    discountPercent: number,
+  ) => {
+    try {
+      await updateProductDiscount(productId, discountPercent);
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === productId ? { ...p, discount_percent: discountPercent } : p,
+        ),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "İndirim güncellenemedi.");
+    }
+  };
+
+  const handleCustomDiscount = (product: Product) => {
+    const raw = window.prompt(
+      "İndirim yüzdesi (0-100)",
+      String(product.discount_percent ?? 0),
+    );
+    if (raw === null) {
+      return;
+    }
+    const percent = Number(raw);
+    if (Number.isNaN(percent)) {
+      return;
+    }
+    handleDiscountSave(
+      product.id,
+      Math.min(100, Math.max(0, Math.round(percent))),
+    );
+  };
+
+  // Canlı arama (başlık) + kategori filtresi — yalnızca client'ta uygulanır
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch = product.title
+      .toLowerCase()
+      .includes(search.trim().toLowerCase());
+    const matchesCategory =
+      categoryFilter === "tumu" || product.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
   if (!isReady) {
     return (
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center px-4 pb-10 pt-24 sm:px-6 sm:pb-14 sm:pt-36 lg:px-8">
@@ -213,7 +286,42 @@ export default function AdminPage() {
 
       {/* Ürün tablosu */}
       {!isLoading && products.length > 0 && (
-        <div className="mt-8 overflow-x-auto">
+        <>
+          {/* Canlı arama + kategori filtreleri */}
+          <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Ürün ara…"
+              aria-label="Ürün ara"
+              className={`${INPUT_CLASS} md:max-w-72`}
+            />
+            <div className="flex flex-wrap items-center gap-1">
+              {CATEGORY_FILTERS.map((filter) => (
+                <button
+                  key={filter.value}
+                  type="button"
+                  onClick={() => setCategoryFilter(filter.value)}
+                  aria-pressed={categoryFilter === filter.value}
+                  className={`cursor-pointer border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] transition-colors ${
+                    categoryFilter === filter.value
+                      ? "border-white bg-white text-black"
+                      : "border-neutral-800 text-neutral-400 hover:border-white hover:text-white"
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {filteredProducts.length === 0 ? (
+            <p className="mt-10 text-center text-sm text-neutral-500">
+              Arama/filtre ile eşleşen ürün bulunamadı.
+            </p>
+          ) : (
+          <div className="mt-6 overflow-x-auto">
           <table className="w-full min-w-170 text-left text-sm">
             <thead>
               <tr className="border-b border-neutral-800 text-xs uppercase tracking-[0.2em] text-neutral-500">
@@ -225,7 +333,7 @@ export default function AdminPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-800">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <tr key={product.id}>
                   <td className="py-4 pr-4">
                     <div className="flex items-center gap-3">
@@ -235,8 +343,52 @@ export default function AdminPage() {
                       <span className="font-medium text-white">{product.title}</span>
                     </div>
                   </td>
-                  <td className="py-4 pr-4 text-neutral-300">
-                    {formatPrice(product.price)}
+                  <td className="py-4 pr-4">
+                    <PriceCell
+                      product={product}
+                      onSave={handlePriceSave}
+                      onError={setError}
+                    />
+                    <div className="mt-2 flex flex-wrap items-center gap-1">
+                      {[10, 20, 30].map((percent) => (
+                        <button
+                          key={percent}
+                          type="button"
+                          onClick={() => handleDiscountSave(product.id, percent)}
+                          aria-pressed={product.discount_percent === percent}
+                          className={`cursor-pointer border px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider transition-colors ${
+                            product.discount_percent === percent
+                              ? "border-[#C6213A] bg-[#C6213A]/20 text-red-300"
+                              : "border-neutral-800 text-neutral-500 hover:border-white hover:text-white"
+                          }`}
+                        >
+                          %{percent}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => handleCustomDiscount(product)}
+                        aria-pressed={isCustomDiscount(product)}
+                        className={`cursor-pointer border px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider transition-colors ${
+                          isCustomDiscount(product)
+                            ? "border-[#C6213A] bg-[#C6213A]/20 text-red-300"
+                            : "border-neutral-800 text-neutral-500 hover:border-white hover:text-white"
+                        }`}
+                      >
+                        {isCustomDiscount(product)
+                          ? `Özel %${product.discount_percent}`
+                          : "Özel %"}
+                      </button>
+                      {product.discount_percent > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDiscountSave(product.id, 0)}
+                          className="cursor-pointer border border-neutral-800 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-neutral-500 transition-colors hover:border-red-400 hover:text-red-300"
+                        >
+                          İndirimi Kaldır
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="py-4 pr-4 uppercase tracking-wider text-neutral-400">
                     {product.category.toLocaleUpperCase("tr-TR")}
@@ -278,6 +430,8 @@ export default function AdminPage() {
             </tbody>
           </table>
         </div>
+          )}
+        </>
       )}
 
       {isModalOpen && (
@@ -287,6 +441,83 @@ export default function AdminPage() {
         />
       )}
     </main>
+  );
+}
+
+/**
+ * Satır içi fiyat düzenleyici. Blur / Enter ile kaydeder; geçersiz
+ * veya değişmemiş değerde orijinal fiyata geri döner.
+ */
+function PriceCell({
+  product,
+  onSave,
+  onError,
+}: {
+  product: Product;
+  onSave: (productId: string, price: number) => void;
+  onError: (message: string) => void;
+}) {
+  const [value, setValue] = useState(String(product.price));
+  const [saving, setSaving] = useState(false);
+
+  // Yazılan değere göre canlı net fiyat (indirim düşülmüş) — kaydetmeden önce bile görünür
+  const parsedPrice = Number(value);
+  const netPrice = getDiscountedPrice({
+    price: Number.isNaN(parsedPrice) ? product.price : parsedPrice,
+    discount_percent: product.discount_percent,
+  });
+
+  const commit = async () => {
+    const next = Number(value);
+    if (Number.isNaN(next) || next < 0 || next === product.price) {
+      setValue(String(product.price));
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateProductPrice(product.id, next);
+      onSave(product.id, next);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Fiyat güncellenemedi.");
+      setValue(String(product.price));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <input
+          type="number"
+          min={0}
+          value={value}
+          aria-label={`${product.title} fiyatı`}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.currentTarget.blur();
+            }
+          }}
+          className="w-24 border border-neutral-800 bg-neutral-950 px-2 py-1.5 text-sm text-white outline-none transition-colors focus:border-neutral-600"
+        />
+        {saving ? (
+          <span className="text-[0.6rem] uppercase tracking-wider text-neutral-500">
+            Kaydediliyor…
+          </span>
+        ) : (
+          <span className="text-[0.6rem] uppercase tracking-wider text-neutral-600">
+            TL
+          </span>
+        )}
+      </div>
+      {(product.discount_percent ?? 0) > 0 && (
+        <p className="mt-1 text-[0.65rem] text-neutral-400">
+          Net: {netPrice.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} TL (-%{product.discount_percent})
+        </p>
+      )}
+    </div>
   );
 }
 

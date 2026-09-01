@@ -7,6 +7,7 @@ import FreeShippingBar from "@/components/FreeShippingBar";
 import { useCart } from "@/context/CartContext";
 import type { CartItem } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
+import { getDiscountedPrice } from "@/lib/pricing";
 
 export default function CartDrawer() {
   const { items, isCartOpen, subtotal, closeCart } = useCart();
@@ -112,6 +113,8 @@ function CartItemRow({ item }: { item: CartItem }) {
   const { updateQuantity, removeFromCart } = useCart();
   const { formatPrice } = useStore();
   const image = item.product.images[0];
+  const finalPrice = getDiscountedPrice(item.product);
+  const hasDiscount = (item.product.discount_percent ?? 0) > 0;
 
   return (
     <li className="flex gap-4">
@@ -166,9 +169,16 @@ function CartItemRow({ item }: { item: CartItem }) {
               +
             </button>
           </div>
-          <span className="text-sm font-medium text-white">
-            {formatPrice(item.product.price * item.quantity)}
-          </span>
+          <div className="text-right">
+            {hasDiscount && (
+              <span className="mr-1.5 text-xs text-neutral-500 line-through">
+                {formatPrice(item.product.price * item.quantity)}
+              </span>
+            )}
+            <span className="text-sm font-medium text-white">
+              {formatPrice(finalPrice * item.quantity)}
+            </span>
+          </div>
         </div>
       </div>
     </li>

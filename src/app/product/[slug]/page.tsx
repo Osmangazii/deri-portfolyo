@@ -5,6 +5,7 @@ import AddToCartButton from "@/components/AddToCartButton";
 import Price from "@/components/Price";
 import ProductGallery from "@/components/ProductGallery";
 import { MOCK_PRODUCTS } from "@/data/products";
+import { getDiscountedPrice } from "@/lib/pricing";
 import { getProductBySlug } from "@/services/productService";
 
 type ProductPageProps = {
@@ -39,6 +40,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 
+  const discount = product.discount_percent ?? 0;
+  const hasDiscount = discount > 0;
+  const finalPrice = getDiscountedPrice(product);
+
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 px-4 pb-10 pt-24 sm:px-6 sm:pb-16 sm:pt-36 lg:px-8">
       {/* Sıkı sütun tanımı + items-start: sol sütun sağ sütunun yüksekliğinden bağımsız */}
@@ -56,9 +61,28 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             {product.title}
           </h1>
-          <p className="mt-4 text-xl text-neutral-300">
-            <Price value={product.price} />
-          </p>
+          <div className="mt-4 flex flex-wrap items-baseline gap-3">
+            {hasDiscount && (
+              <Price
+                value={product.price}
+                className="text-lg text-neutral-500 line-through"
+              />
+            )}
+            <p
+              className={`${
+                hasDiscount
+                  ? "text-2xl font-semibold text-white"
+                  : "text-xl text-neutral-300"
+              }`}
+            >
+              <Price value={finalPrice} />
+            </p>
+            {hasDiscount && (
+              <span className="bg-[#C6213A] px-2 py-1 text-[0.65rem] font-bold tracking-wider text-white">
+                -%{Math.round(discount)}
+              </span>
+            )}
+          </div>
 
           <p className="mt-8 leading-relaxed text-neutral-400">
             {product.description}

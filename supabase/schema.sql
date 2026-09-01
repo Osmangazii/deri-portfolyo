@@ -13,12 +13,18 @@ create table if not exists public.products (
   slug text not null unique,
   description text not null default '',
   price numeric not null check (price >= 0),
+  discount_percent numeric not null default 0 check (discount_percent >= 0 and discount_percent <= 100),
   category text not null,
   gender text not null check (gender in ('kadin', 'erkek', 'unisex')),
   images text[] not null default '{}',
   in_stock boolean not null default true,
   created_at timestamptz not null default now()
 );
+
+-- Mevcut kurulumlarda sütun eksikse ekler (idempotent migrasyon)
+alter table public.products
+  add column if not exists discount_percent numeric not null default 0
+  check (discount_percent >= 0 and discount_percent <= 100);
 
 -- ------------------------------------------------------------
 -- Profiller (auth.users ile 1:1)
