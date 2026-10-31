@@ -114,24 +114,71 @@ export async function getProductsByGender(gender: string): Promise<Product[]> {
   return getProductsFiltered({ gender });
 }
 
+/** URL-encoded rota segmentini güvenle çözer (bozuk % dizilerinde orijinali döner). */
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 /**
- * Slug ile tek ürün. DB'de yoksa mock'a düşer; hiçbir yerde yoksa null.
+ * Ürünü anahtarla getirir. Anahtar URL'den geldiği için ham ve decode edilmiş
+ * halleri denenir (örn. `yeni%20deneme` → `yeni deneme`). Eşleşme sırası:
+ * `slug` → `id` → birebir `title`. DB'de bulunamazsa mock veriye düşer;
+ * hiçbir yerde yoksa null döner.
  */
 export async function getProductBySlug(slug: string): Promise<Product | null> {
+  const decoded = safeDecode(slug);
+  const candidates = Array.from(new Set([slug, decoded])).filter(Boolean);
+
   try {
     await ensureSchema();
-    const result = await db.execute({
-      sql: "select * from products where slug = ? limit 1",
-      args: [slug],
-    });
-    const row = result.rows[0] as unknown as ProductRow | undefined;
-    if (!row) {
-      return MOCK_PRODUCTS.find((product) => product.slug === slug) ?? null;
+
+    for (const key of candidates) {
+      // 1) slug
+      let result = await db.execute({
+        sql: "select * from products where slug = ? limit 1",
+        args: [key],
+      });
+      let row = result.rows[0] as unknown as ProductRow | undefined;
+
+      // 2) slug bulunamadıysa id ile dene
+      if (!row) {
+        result = await db.execute({
+          sql: "select * from products where id = ? limit 1",
+          args: [key],
+        });
+        row = result.rows[0] as unknown as ProductRow | undefined;
+      }
+
+      // 3) hâlâ yoksa birebir başlık ile dene
+      if (!row) {
+        result = await db.execute({
+          sql: "select * from products where title = ? limit 1",
+          args: [key],
+        });
+        row = result.rows[0] as unknown as ProductRow | undefined;
+      }
+
+      if (row) {
+        return mapRow(row);
+      }
     }
-    return mapRow(row);
   } catch {
-    return MOCK_PRODUCTS.find((product) => product.slug === slug) ?? null;
+    // DB erişilemez — mock fallback'e düş
   }
+
+  // Mock fallback: slug / id / birebir başlık eşleşmesi
+  return (
+    MOCK_PRODUCTS.find(
+      (product) =>
+        candidates.includes(product.slug) ||
+        candidates.includes(product.id) ||
+        candidates.includes(product.title),
+    ) ?? null
+  );
 }
 
 // ------------------------------------------------------------
