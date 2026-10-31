@@ -1,42 +1,78 @@
-import { supabase } from "@/lib/supabase/client";
+import { randomUUID } from "node:crypto";
+import { db, ensureSchema } from "@/lib/db";
 import { MOCK_PRODUCTS } from "@/data/products";
 import type { Gender, Product } from "@/types/product";
-import type { Product as DbProduct } from "@/types/database";
+import type { AdminProduct, ProductRow } from "@/types/database";
+
+// ------------------------------------------------------------
+// Satır → uygulama tipi dönüşümleri
+// ------------------------------------------------------------
+
+function parseImages(row: ProductRow): string[] {
+  try {
+    const parsed = JSON.parse(row.images) as unknown;
+    if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) {
+      return parsed as string[];
+    }
+  } catch {
+    // Bozuk JSON — image_url'e geri düş
+  }
+  return row.image_url ? [row.image_url] : [];
+}
+
+function mapRow(row: ProductRow): Product {
+  return {
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    price: Number(row.price),
+    discount_percent: Number(row.discount_percent ?? 0),
+    category: row.category,
+    gender: row.gender,
+    images: parseImages(row),
+    description: row.description,
+  };
+}
+
+function mapRowToAdmin(row: ProductRow): AdminProduct {
+  return {
+    ...mapRow(row),
+    discount_percent: Number(row.discount_percent ?? 0),
+    in_stock: Number(row.in_stock) === 1,
+    created_at: row.created_at,
+  };
+}
+
+function asRows(rows: unknown): ProductRow[] {
+  return rows as ProductRow[];
+}
+
+// ------------------------------------------------------------
+// Vitrin sorguları (fallback: MOCK_PRODUCTS)
+// ------------------------------------------------------------
 
 /**
- * Supabase'ten stokta olan tüm ürünleri getirir.
- * Sorgu hata verirse (ilk kurulum, ağ sorunu) veya boş dönerse
- * MOCK_PRODUCTS'e yumuşak bir geçiş (fallback) yapar.
+ * Stokta olan tüm ürünleri getirir. Sorgu hata verirse (kurulum/ağ)
+ * veya tablo boşsa MOCK_PRODUCTS'e yumuşak geçiş yapar.
  */
 export async function getProducts(): Promise<Product[]> {
   try {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("in_stock", true)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      throw error;
-    }
-
-    if (!data || data.length === 0) {
+    await ensureSchema();
+    const result = await db.execute(
+      "select * from products where in_stock = 1 order by created_at desc",
+    );
+    if (result.rows.length === 0) {
       return MOCK_PRODUCTS;
     }
-
-    return data as Product[];
+    return asRows(result.rows).map(mapRow);
   } catch {
     return MOCK_PRODUCTS;
   }
 }
 
 /**
- * Kategori + cinsiyet bileşik filtrelemesi. Her iki parametre opsiyoneldir:
- * - ikisi de verilirse: .eq('category', category).in('gender', [gender, 'unisex'])
- * - tek parametre: o filtre uygulanır
- * - hiçbiri: tüm stoktaki ürünler
- * Cinsiyet kuralı (standart e-ticaret): 'unisex' = tümü (filtre uygulanmaz);
- * 'kadin' = in('kadin','unisex'); 'erkek' = in('erkek','unisex').
+ * Kategori + cinsiyet bileşik filtrelemesi (opsiyonel parametreler).
+ * 'unisex' = tümü; 'kadin' = kadin+unisex; 'erkek' = erkek+unisex.
  * Hata durumunda boş dizi döner (mock karışımı yok).
  */
 export async function getProductsFiltered(filter: {
@@ -44,67 +80,62 @@ export async function getProductsFiltered(filter: {
   gender?: string;
 }): Promise<Product[]> {
   try {
-    let query = supabase.from("products").select("*").eq("in_stock", true);
+    await ensureSchema();
+    const conditions = ["in_stock = 1"];
+    const args: Array<string | number> = [];
 
     if (filter.category) {
-      query = query.eq("category", filter.category);
+      conditions.push("category = ?");
+      args.push(filter.category);
     }
-    // 'unisex' tüm ürünleri temsil eder — cinsiyet kısıtı uygulanmaz
     if (filter.gender && filter.gender !== "unisex") {
-      query = query.in("gender", [filter.gender, "unisex"]);
+      conditions.push("gender in (?, 'unisex')");
+      args.push(filter.gender);
     }
 
-    const { data, error } = await query;
+    const result = await db.execute({
+      sql: `select * from products where ${conditions.join(" and ")} order by created_at desc`,
+      args,
+    });
 
-    if (error) {
-      throw error;
-    }
-
-    return (data ?? []) as Product[];
+    return asRows(result.rows).map(mapRow);
   } catch {
     return [];
   }
 }
 
-/** Belirli bir kategorideki ürünleri Supabase'ten getirir. Eşleşme yoksa veya hata olursa boş dizi. */
+/** Belirli bir kategorideki ürünler. */
 export async function getProductsByCategory(category: string): Promise<Product[]> {
   return getProductsFiltered({ category });
 }
 
-/** Cinsiyete göre ürün getirir: seçilen cinsiyet + unisex ürünler. */
+/** Cinsiyete göre ürünler: seçilen cinsiyet + unisex. */
 export async function getProductsByGender(gender: string): Promise<Product[]> {
   return getProductsFiltered({ gender });
 }
 
 /**
- * Slug değerine göre tek bir ürün getirir.
- * Veritabanında bulunamazsa veya sorgu hata verirse mock veriye düşer;
- * hiçbir yerde yoksa null döner.
+ * Slug ile tek ürün. DB'de yoksa mock'a düşer; hiçbir yerde yoksa null.
  */
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   try {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("slug", slug)
-      .maybeSingle();
-
-    if (error) {
-      throw error;
-    }
-
-    if (!data) {
+    await ensureSchema();
+    const result = await db.execute({
+      sql: "select * from products where slug = ? limit 1",
+      args: [slug],
+    });
+    const row = result.rows[0] as unknown as ProductRow | undefined;
+    if (!row) {
       return MOCK_PRODUCTS.find((product) => product.slug === slug) ?? null;
     }
-
-    return data as Product;
+    return mapRow(row);
   } catch {
     return MOCK_PRODUCTS.find((product) => product.slug === slug) ?? null;
   }
 }
 
 // ------------------------------------------------------------
-// Admin: ürün yönetimi (RLS gereği admin oturumu ile çalışır)
+// Admin: ürün yönetimi (yalnızca sunucuda; server action'lar üzerinden çağrılır)
 // ------------------------------------------------------------
 
 export type ProductInput = {
@@ -112,7 +143,7 @@ export type ProductInput = {
   slug: string;
   description: string;
   price: number;
-  /** İndirim yüzdesi (0-100). Belirtilmezse DB default'u (0) kullanılır. */
+  /** İndirim yüzdesi (0-100). Belirtilmezse 0. */
   discount_percent?: number;
   category: string;
   gender: Gender;
@@ -120,33 +151,56 @@ export type ProductInput = {
   in_stock: boolean;
 };
 
-/** Tüm ürünleri (stok durumu fark etmeksizin) getirir. Admin paneline özel. */
-export async function getAllProducts(): Promise<DbProduct[]> {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw error;
-  }
-
-  return (data ?? []) as DbProduct[];
+/** Tüm ürünleri (stok durumu fark etmeksizin) getirir. */
+export async function getAllProducts(): Promise<AdminProduct[]> {
+  await ensureSchema();
+  const result = await db.execute(
+    "select * from products order by created_at desc",
+  );
+  return asRows(result.rows).map(mapRowToAdmin);
 }
 
 /** Yeni ürün ekler ve eklenen kaydı döner. */
-export async function insertProduct(input: ProductInput): Promise<DbProduct> {
-  const { data, error } = await supabase
-    .from("products")
-    .insert(input)
-    .select()
-    .single();
+export async function insertProduct(input: ProductInput): Promise<AdminProduct> {
+  await ensureSchema();
+  const id = randomUUID();
+  const images = input.images.map((url) => url.trim()).filter(Boolean);
+  const imageUrl = images[0] ?? "";
+  const discountPercent = input.discount_percent ?? 0;
 
-  if (error) {
-    throw error;
-  }
+  await db.execute({
+    sql: `insert into products
+            (id, title, slug, description, price, category, gender, image_url, images, discount_percent, in_stock)
+          values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      id,
+      input.title,
+      input.slug,
+      input.description,
+      input.price,
+      input.category,
+      input.gender,
+      imageUrl,
+      JSON.stringify(images),
+      discountPercent,
+      input.in_stock ? 1 : 0,
+    ],
+  });
 
-  return data as DbProduct;
+  return mapRowToAdmin({
+    id,
+    title: input.title,
+    slug: input.slug,
+    description: input.description,
+    price: input.price,
+    category: input.category,
+    gender: input.gender,
+    image_url: imageUrl,
+    images: JSON.stringify(images),
+    discount_percent: discountPercent,
+    in_stock: input.in_stock ? 1 : 0,
+    created_at: new Date().toISOString(),
+  });
 }
 
 /** Ürünün stok durumunu günceller. */
@@ -154,14 +208,11 @@ export async function toggleProductStock(
   productId: string,
   inStock: boolean,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("products")
-    .update({ in_stock: inStock })
-    .eq("id", productId);
-
-  if (error) {
-    throw error;
-  }
+  await ensureSchema();
+  await db.execute({
+    sql: "update products set in_stock = ? where id = ?",
+    args: [inStock ? 1 : 0, productId],
+  });
 }
 
 /** Ürünün taban fiyatını günceller (indirim ayrı yönetilir). */
@@ -169,14 +220,11 @@ export async function updateProductPrice(
   productId: string,
   price: number,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("products")
-    .update({ price })
-    .eq("id", productId);
-
-  if (error) {
-    throw error;
-  }
+  await ensureSchema();
+  await db.execute({
+    sql: "update products set price = ? where id = ?",
+    args: [price, productId],
+  });
 }
 
 /** Ürünün indirim yüzdesini günceller (0 = indirim kaldır). */
@@ -184,24 +232,18 @@ export async function updateProductDiscount(
   productId: string,
   discountPercent: number,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("products")
-    .update({ discount_percent: discountPercent })
-    .eq("id", productId);
-
-  if (error) {
-    throw error;
-  }
+  await ensureSchema();
+  await db.execute({
+    sql: "update products set discount_percent = ? where id = ?",
+    args: [discountPercent, productId],
+  });
 }
 
 /** Ürünü siler. */
 export async function deleteProduct(productId: string): Promise<void> {
-  const { error } = await supabase
-    .from("products")
-    .delete()
-    .eq("id", productId);
-
-  if (error) {
-    throw error;
-  }
+  await ensureSchema();
+  await db.execute({
+    sql: "delete from products where id = ?",
+    args: [productId],
+  });
 }

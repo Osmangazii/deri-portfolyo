@@ -1,47 +1,29 @@
-import type { Gender } from "@/types/product";
+import type { Gender, Product } from "@/types/product";
 
 /**
- * Supabase şemasıyla birebir eşleşen veritabanı satır tipleri.
- * Uygulama katmanındaki `Product` (src/types/product.ts) ile yapısal olarak
- * uyumludur; yalnızca DB'ye özgü `in_stock` ve `created_at` alanlarını ekler.
+ * Turso/SQLite `products` tablosunun ham satır tipi.
+ * - `in_stock` SQLite'ta 0/1 olarak saklanır.
+ * - `images` JSON metni olarak saklanır; `image_url` birincil görseldir.
  */
-
-export interface Product {
+export interface ProductRow {
   id: string;
   title: string;
   slug: string;
   description: string;
   price: number;
-  /** İndirim yüzdesi (0-100); 0 = indirim yok. DB default'u 0'dır. */
-  discount_percent: number;
   category: string;
   gender: Gender;
-  images: string[];
+  image_url: string;
+  images: string;
+  discount_percent: number;
+  in_stock: number;
+  created_at: string;
+}
+
+/** Admin panelinde kullanılan ürün tipi (uygulama Product + stok/tarih alanları). */
+export type AdminProduct = Product & {
+  /** Admin tarafında her zaman tanımlı (DB default 0). */
+  discount_percent: number;
   in_stock: boolean;
   created_at: string;
-}
-
-export interface Profile {
-  id: string;
-  full_name: string | null;
-  phone: string | null;
-  role: "customer" | "admin";
-  created_at: string;
-}
-
-export interface Order {
-  id: string;
-  user_id: string | null;
-  total_amount: number;
-  status: string;
-  customer_info: Record<string, unknown> | null;
-  created_at: string;
-}
-
-export interface OrderItem {
-  id: string;
-  order_id: string;
-  product_id: string;
-  quantity: number;
-  unit_price: number;
-}
+};
