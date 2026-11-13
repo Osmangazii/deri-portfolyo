@@ -4,10 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 import FreeShippingBar from "@/components/FreeShippingBar";
-import { useCart } from "@/context/CartContext";
+import { getUnitPrice, useCart } from "@/context/CartContext";
 import type { CartItem } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
-import { getDiscountedPrice } from "@/lib/pricing";
 
 export default function CartDrawer() {
   const { items, isCartOpen, subtotal, closeCart } = useCart();
@@ -113,7 +112,8 @@ function CartItemRow({ item }: { item: CartItem }) {
   const { updateQuantity, removeFromCart } = useCart();
   const { formatPrice } = useStore();
   const image = item.product.images[0];
-  const finalPrice = getDiscountedPrice(item.product);
+  const unitPrice = getUnitPrice(item);
+  const originalUnit = item.product.price + (item.variant?.price_adjustment ?? 0);
   const hasDiscount = (item.product.discount_percent ?? 0) > 0;
 
   return (
@@ -136,11 +136,29 @@ function CartItemRow({ item }: { item: CartItem }) {
             <h3 className="mt-0.5 text-sm font-medium text-white">
               {item.product.title}
             </h3>
+            {item.variant && (item.variant.color_name || item.variant.size) && (
+              <p className="mt-1 flex items-center gap-1.5 text-[0.7rem] text-neutral-400">
+                {item.variant.color_name && (
+                  <>
+                    <span
+                      className="h-2.5 w-2.5 rounded-full border border-white/20"
+                      style={{
+                        backgroundColor: item.variant.color_hex || "#000000",
+                      }}
+                      aria-hidden="true"
+                    />
+                    {item.variant.color_name}
+                    {item.variant.size ? " · " : ""}
+                  </>
+                )}
+                {item.variant.size}
+              </p>
+            )}
           </div>
           <button
             type="button"
             aria-label={`${item.product.title} ürününü sepetten çıkar`}
-            onClick={() => removeFromCart(item.product.id)}
+            onClick={() => removeFromCart(item.key)}
             className="cursor-pointer text-neutral-500 transition-colors hover:text-white"
           >
             <TrashIcon className="h-4 w-4" />
@@ -152,7 +170,7 @@ function CartItemRow({ item }: { item: CartItem }) {
             <button
               type="button"
               aria-label="Miktarı azalt"
-              onClick={() => updateQuantity(item.product.id, -1)}
+              onClick={() => updateQuantity(item.key, -1)}
               className="flex h-8 w-8 cursor-pointer items-center justify-center text-neutral-300 transition-colors hover:bg-neutral-800 hover:text-white"
             >
               −
@@ -163,7 +181,7 @@ function CartItemRow({ item }: { item: CartItem }) {
             <button
               type="button"
               aria-label="Miktarı arttır"
-              onClick={() => updateQuantity(item.product.id, 1)}
+              onClick={() => updateQuantity(item.key, 1)}
               className="flex h-8 w-8 cursor-pointer items-center justify-center text-neutral-300 transition-colors hover:bg-neutral-800 hover:text-white"
             >
               +
@@ -172,11 +190,11 @@ function CartItemRow({ item }: { item: CartItem }) {
           <div className="text-right">
             {hasDiscount && (
               <span className="mr-1.5 text-xs text-neutral-500 line-through">
-                {formatPrice(item.product.price * item.quantity)}
+                {formatPrice(originalUnit * item.quantity)}
               </span>
             )}
             <span className="text-sm font-medium text-white">
-              {formatPrice(finalPrice * item.quantity)}
+              {formatPrice(unitPrice * item.quantity)}
             </span>
           </div>
         </div>

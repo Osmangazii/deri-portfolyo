@@ -1,4 +1,4 @@
-import type { Gender, Product } from "@/types/product";
+import type { Gender, Product, ProductVariant } from "@/types/product";
 
 /**
  * Turso/SQLite `products` tablosunun ham satır tipi.
@@ -20,10 +20,23 @@ export interface ProductRow {
   created_at: string;
 }
 
-/** Admin panelinde kullanılan ürün tipi (uygulama Product + stok/tarih alanları). */
+/** Turso/SQLite `product_variants` tablosunun ham satır tipi. */
+export interface VariantRow {
+  id: string;
+  product_id: string;
+  variant_type: string;
+  color_name: string | null;
+  color_hex: string | null;
+  size: string | null;
+  price_adjustment: number;
+  stock: number;
+}
+
+/** Admin panelinde kullanılan ürün tipi (uygulama Product + stok/tarih + varyantlar). */
 export type AdminProduct = Product & {
   /** Admin tarafında her zaman tanımlı (DB default 0). */
   discount_percent: number;
   in_stock: boolean;
   created_at: string;
+  variants: ProductVariant[];
 };

@@ -14,9 +14,16 @@ import {
   setDiscountAction,
   setPriceAction,
   setStockAction,
+  updateVariantsAction,
 } from "@/app/admin/actions";
+import VariantEditor, {
+  draftsToInput,
+  emptyVariantDraft,
+  variantsToDrafts,
+} from "@/components/admin/VariantEditor";
+import type { VariantDraft } from "@/components/admin/VariantEditor";
 import type { AdminProduct as Product } from "@/types/database";
-import type { Gender } from "@/types/product";
+import type { Gender, ProductVariant, VariantType } from "@/types/product";
 
 const CATEGORY_OPTIONS = [
   { value: "canta", label: "Çanta" },
@@ -56,6 +63,7 @@ export default function AdminDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("tumu");
+  const [variantsProduct, setVariantsProduct] = useState<Product | null>(null);
 
   const loadProducts = useCallback(async () => {
     try {
@@ -360,7 +368,17 @@ export default function AdminDashboard() {
                     </span>
                   </td>
                   <td className="py-4">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setVariantsProduct(product)}
+                        className="cursor-pointer border border-neutral-800 px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-neutral-300 transition-colors hover:border-white hover:text-white"
+                      >
+                        Varyantlar
+                        {product.variants.length > 0
+                          ? ` (${product.variants.length})`
+                          : ""}
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleToggleStock(product)}
@@ -390,6 +408,19 @@ export default function AdminDashboard() {
         <AddProductModal
           onClose={() => setIsModalOpen(false)}
           onAdded={(product) => setProducts((prev) => [product, ...prev])}
+        />
+      )}
+
+      {variantsProduct && (
+        <EditVariantsModal
+          product={variantsProduct}
+          onClose={() => setVariantsProduct(null)}
+          onSaved={(productId, variants) => {
+            setProducts((prev) =>
+              prev.map((p) => (p.id === productId ? { ...p, variants } : p)),
+            );
+            setVariantsProduct(null);
+          }}
         />
       )}
     </main>
@@ -520,6 +551,8 @@ function AddProductModal({
   });
   const [slugTouched, setSlugTouched] = useState(false);
   const [imageUrls, setImageUrls] = useState("");
+  const [variantType, setVariantType] = useState<VariantType>("none");
+  const [variantDrafts, setVariantDrafts] = useState<VariantDraft[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -556,9 +589,15 @@ function AddProductModal({
         gender: form.gender,
         images,
         in_stock: form.in_stock,
+        variants:
+          variantType === "none"
+            ? undefined
+            : draftsToInput(variantDrafts, variantType),
       });
 
       setImageUrls("");
+      setVariantType("none");
+      setVariantDrafts([]);
       onAdded(product);
       onClose();
     } catch (err) {
@@ -725,6 +764,42 @@ function AddProductModal({
             </p>
           </div>
 
+          {/* Varyantlar (renk / beden) */}
+          <div>
+            <label
+              htmlFor="variant-type"
+              className="mb-1.5 block text-[0.65rem] uppercase tracking-[0.2em] text-neutral-500"
+            >
+              Varyant Tipi Seçin
+            </label>
+            <select
+              id="variant-type"
+              value={variantType}
+              onChange={(e) => {
+                const next = e.target.value as VariantType;
+                setVariantType(next);
+                if (next !== "none" && variantDrafts.length === 0) {
+                  setVariantDrafts([emptyVariantDraft()]);
+                }
+              }}
+              className={INPUT_CLASS}
+            >
+              <option value="none">Yok</option>
+              <option value="color">Sadece Renk</option>
+              <option value="size">Sadece Beden</option>
+              <option value="both">Renk ve Beden</option>
+            </select>
+            {variantType !== "none" && (
+              <div className="mt-3">
+                <VariantEditor
+                  variantType={variantType}
+                  drafts={variantDrafts}
+                  onChange={setVariantDrafts}
+                />
+              </div>
+            )}
+          </div>
+
           <label className="flex cursor-pointer items-center gap-3 text-sm text-neutral-300">
             <input
               type="checkbox"
@@ -754,6 +829,133 @@ function AddProductModal({
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+/** Mevcut ürünün varyantlarını düzenleme modalı. */
+function EditVariantsModal({
+  product,
+  onClose,
+  onSaved,
+}: {
+  product: Product;
+  onClose: () => void;
+  onSaved: (productId: string, variants: ProductVariant[]) => void;
+}) {
+  const [drafts, setDrafts] = useState<VariantDraft[]>(() =>
+    product.variants.length > 0
+      ? variantsToDrafts(product.variants)
+      : [emptyVariantDraft()],
+  );
+  const [variantType, setVariantType] = useState<VariantType>(
+    product.variants[0]?.variant_type ?? "none",
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setError(null);
+    setSaving(true);
+    try {
+      const updated = await updateVariantsAction(
+        product.id,
+        draftsToInput(drafts, variantType),
+      );
+      onSaved(product.id, updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Varyantlar kaydedilemedi.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-80 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/70"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Varyantları düzenle"
+        className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto border border-neutral-800 bg-neutral-950 p-6"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.3em] text-white">
+            Varyantlar — {product.title}
+          </h2>
+          <button
+            type="button"
+            aria-label="Kapat"
+            onClick={onClose}
+            className="cursor-pointer text-neutral-400 transition-colors hover:text-white"
+          >
+            <CloseIcon className="h-5 w-5" />
+          </button>
+        </div>
+
+        {error && (
+          <p className="mt-4 border border-red-900 bg-red-950/40 px-3 py-2 text-xs text-red-400">
+            {error}
+          </p>
+        )}
+
+        <div className="mt-5 space-y-4">
+          <div>
+            <label
+              htmlFor="edit-variant-type"
+              className="mb-1.5 block text-[0.65rem] uppercase tracking-[0.2em] text-neutral-500"
+            >
+              Varyant Tipi Seçin
+            </label>
+            <select
+              id="edit-variant-type"
+              value={variantType}
+              onChange={(e) => {
+                const next = e.target.value as VariantType;
+                setVariantType(next);
+                if (next !== "none" && drafts.length === 0) {
+                  setDrafts([emptyVariantDraft()]);
+                }
+              }}
+              className={INPUT_CLASS}
+            >
+              <option value="none">Yok</option>
+              <option value="color">Sadece Renk</option>
+              <option value="size">Sadece Beden</option>
+              <option value="both">Renk ve Beden</option>
+            </select>
+          </div>
+          {variantType !== "none" && (
+            <VariantEditor
+              variantType={variantType}
+              drafts={drafts}
+              onChange={setDrafts}
+            />
+          )}
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="cursor-pointer border border-neutral-800 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-300 transition-colors hover:border-white hover:text-white"
+          >
+            Vazgeç
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="cursor-pointer bg-white px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-black transition-colors hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving ? "Kaydediliyor…" : "Kaydet"}
+          </button>
+        </div>
       </div>
     </div>
   );

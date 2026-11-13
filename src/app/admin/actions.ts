@@ -8,12 +8,14 @@ import {
   deleteProduct,
   getAllProducts,
   insertProduct,
+  replaceProductVariants,
   toggleProductStock,
   updateProductDiscount,
   updateProductPrice,
 } from "@/services/productService";
-import type { ProductInput } from "@/services/productService";
+import type { ProductInput, VariantInput } from "@/services/productService";
 import type { AdminProduct } from "@/types/database";
+import type { ProductVariant } from "@/types/product";
 
 const SESSION_MAX_AGE = 60 * 60 * 8; // 8 saat
 
@@ -93,6 +95,19 @@ export async function setDiscountAction(
   await updateProductDiscount(productId, discountPercent);
   revalidatePath("/");
   revalidatePath("/admin");
+}
+
+/** Ürünün varyantlarını (renk/beden) değiştirir. */
+export async function updateVariantsAction(
+  productId: string,
+  variants: VariantInput[],
+): Promise<ProductVariant[]> {
+  await assertAdmin();
+  const updated = await replaceProductVariants(productId, variants);
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/product/[slug]", "page");
+  return updated;
 }
 
 /** Ürünü siler. */

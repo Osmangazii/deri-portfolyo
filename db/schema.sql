@@ -22,3 +22,24 @@ create table if not exists products (
 
 create index if not exists products_slug_idx on products (slug);
 create index if not exists products_category_idx on products (category);
+
+-- ------------------------------------------------------------
+-- Ürün varyantları (renk + beden kombinasyonları)
+-- ------------------------------------------------------------
+create table if not exists product_variants (
+  id text primary key,
+  product_id text not null references products (id) on delete cascade,
+  variant_type text not null default 'both' check (variant_type in ('color', 'size', 'both', 'none')),
+  color_name text,
+  color_hex text,
+  size text,
+  price_adjustment real not null default 0,
+  stock integer not null default 10
+);
+
+-- Mevcut (eski şemalı) kurulumlarda variant_type sütunu yoksa (yalnızca bir kez):
+-- alter table product_variants add column variant_type text not null default 'both';
+-- (SQLite "ADD COLUMN IF NOT EXISTS" desteklemez; uygulama bunu PRAGMA ile
+--  otomatik kontrol edip gerekirse ekler — src/lib/db.ts.)
+
+create index if not exists product_variants_product_idx on product_variants (product_id);

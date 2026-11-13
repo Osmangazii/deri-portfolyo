@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { db, ensureSchema } from "@/lib/db";
 import { MOCK_PRODUCTS } from "@/data/products";
-import type { Gender, Product } from "@/types/product";
-import type { AdminProduct, ProductRow } from "@/types/database";
+import type { Gender, Product, ProductVariant, VariantType } from "@/types/product";
+import type { AdminProduct, ProductRow, VariantRow } from "@/types/database";
 
 // ------------------------------------------------------------
 // Satır → uygulama tipi dönüşümleri
@@ -34,13 +34,76 @@ function mapRow(row: ProductRow): Product {
   };
 }
 
-function mapRowToAdmin(row: ProductRow): AdminProduct {
+function mapRowToAdmin(
+  row: ProductRow,
+  variants: ProductVariant[] = [],
+): AdminProduct {
   return {
     ...mapRow(row),
     discount_percent: Number(row.discount_percent ?? 0),
     in_stock: Number(row.in_stock) === 1,
     created_at: row.created_at,
+    variants,
   };
+}
+
+function normalizeVariantType(value: unknown): VariantType {
+  return value === "color" || value === "size" || value === "none" || value === "both"
+    ? value
+    : "both";
+}
+
+function mapVariant(row: VariantRow): ProductVariant {
+  return {
+    id: row.id,
+    product_id: row.product_id,
+    variant_type: normalizeVariantType(row.variant_type),
+    color_name: row.color_name ?? "",
+    color_hex: row.color_hex ?? "",
+    size: row.size ?? "",
+    price_adjustment: Number(row.price_adjustment ?? 0),
+    stock: Number(row.stock ?? 0),
+  };
+}
+
+/** Verilen ürün id'leri için varyantları tek sorguda getirip gruplar. Hata → boş map. */
+async function fetchVariantsByProductIds(
+  productIds: string[],
+): Promise<Map<string, ProductVariant[]>> {
+  const grouped = new Map<string, ProductVariant[]>();
+  if (productIds.length === 0) {
+    return grouped;
+  }
+
+  try {
+    const placeholders = productIds.map(() => "?").join(", ");
+    const result = await db.execute({
+      sql: `select * from product_variants where product_id in (${placeholders}) order by color_name, size`,
+      args: productIds,
+    });
+
+    for (const row of result.rows as unknown as VariantRow[]) {
+      const variant = mapVariant(row);
+      const list = grouped.get(variant.product_id) ?? [];
+      list.push(variant);
+      grouped.set(variant.product_id, list);
+    }
+  } catch {
+    // Varyant tablosu yok/erişilemez — ürün listesi yine dönsün
+  }
+
+  return grouped;
+}
+
+async function attachVariants(products: Product[]): Promise<Product[]> {
+  if (products.length === 0) {
+    return products;
+  }
+  const grouped = await fetchVariantsByProductIds(products.map((p) => p.id));
+  return products.map((product) => ({
+    ...product,
+    variants: grouped.get(product.id) ?? [],
+  }));
 }
 
 function asRows(rows: unknown): ProductRow[] {
@@ -64,7 +127,7 @@ export async function getProducts(): Promise<Product[]> {
     if (result.rows.length === 0) {
       return MOCK_PRODUCTS;
     }
-    return asRows(result.rows).map(mapRow);
+    return attachVariants(asRows(result.rows).map(mapRow));
   } catch {
     return MOCK_PRODUCTS;
   }
@@ -98,7 +161,7 @@ export async function getProductsFiltered(filter: {
       args,
     });
 
-    return asRows(result.rows).map(mapRow);
+    return attachVariants(asRows(result.rows).map(mapRow));
   } catch {
     return [];
   }
@@ -163,7 +226,8 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
       }
 
       if (row) {
-        return mapRow(row);
+        const [withVariants] = await attachVariants([mapRow(row)]);
+        return withVariants;
       }
     }
   } catch {
@@ -185,6 +249,15 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 // Admin: ürün yönetimi (yalnızca sunucuda; server action'lar üzerinden çağrılır)
 // ------------------------------------------------------------
 
+export type VariantInput = {
+  variant_type: VariantType;
+  color_name: string;
+  color_hex: string;
+  size: string;
+  price_adjustment: number;
+  stock: number;
+};
+
 export type ProductInput = {
   title: string;
   slug: string;
@@ -196,18 +269,44 @@ export type ProductInput = {
   gender: Gender;
   images: string[];
   in_stock: boolean;
+  /** Renk/beden varyantları (opsiyonel). */
+  variants?: VariantInput[];
 };
 
-/** Tüm ürünleri (stok durumu fark etmeksizin) getirir. */
+const VARIANT_INSERT_SQL = `insert into product_variants
+  (id, product_id, variant_type, color_name, color_hex, size, price_adjustment, stock)
+  values (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+function variantInsertStatement(
+  variant: ProductVariant,
+): { sql: string; args: Array<string | number> } {
+  return {
+    sql: VARIANT_INSERT_SQL,
+    args: [
+      variant.id,
+      variant.product_id,
+      variant.variant_type,
+      variant.color_name,
+      variant.color_hex,
+      variant.size,
+      variant.price_adjustment,
+      variant.stock,
+    ],
+  };
+}
+
+/** Tüm ürünleri (stok durumu fark etmeksizin) varyantlarıyla birlikte getirir. */
 export async function getAllProducts(): Promise<AdminProduct[]> {
   await ensureSchema();
   const result = await db.execute(
     "select * from products order by created_at desc",
   );
-  return asRows(result.rows).map(mapRowToAdmin);
+  const rows = asRows(result.rows);
+  const grouped = await fetchVariantsByProductIds(rows.map((row) => row.id));
+  return rows.map((row) => mapRowToAdmin(row, grouped.get(row.id) ?? []));
 }
 
-/** Yeni ürün ekler ve eklenen kaydı döner. */
+/** Yeni ürün ekler (varsa varyantlarıyla birlikte, tek transaction'da). */
 export async function insertProduct(input: ProductInput): Promise<AdminProduct> {
   await ensureSchema();
   const id = randomUUID();
@@ -215,39 +314,90 @@ export async function insertProduct(input: ProductInput): Promise<AdminProduct> 
   const imageUrl = images[0] ?? "";
   const discountPercent = input.discount_percent ?? 0;
 
-  await db.execute({
-    sql: `insert into products
-            (id, title, slug, description, price, category, gender, image_url, images, discount_percent, in_stock)
-          values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [
-      id,
-      input.title,
-      input.slug,
-      input.description,
-      input.price,
-      input.category,
-      input.gender,
-      imageUrl,
-      JSON.stringify(images),
-      discountPercent,
-      input.in_stock ? 1 : 0,
-    ],
-  });
+  const variants: ProductVariant[] = (input.variants ?? []).map((variant) => ({
+    id: randomUUID(),
+    product_id: id,
+    variant_type: variant.variant_type,
+    color_name: variant.color_name,
+    color_hex: variant.color_hex,
+    size: variant.size,
+    price_adjustment: variant.price_adjustment,
+    stock: variant.stock,
+  }));
 
-  return mapRowToAdmin({
-    id,
-    title: input.title,
-    slug: input.slug,
-    description: input.description,
-    price: input.price,
-    category: input.category,
-    gender: input.gender,
-    image_url: imageUrl,
-    images: JSON.stringify(images),
-    discount_percent: discountPercent,
-    in_stock: input.in_stock ? 1 : 0,
-    created_at: new Date().toISOString(),
-  });
+  await db.batch(
+    [
+      {
+        sql: `insert into products
+                (id, title, slug, description, price, category, gender, image_url, images, discount_percent, in_stock)
+              values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          id,
+          input.title,
+          input.slug,
+          input.description,
+          input.price,
+          input.category,
+          input.gender,
+          imageUrl,
+          JSON.stringify(images),
+          discountPercent,
+          input.in_stock ? 1 : 0,
+        ],
+      },
+      ...variants.map(variantInsertStatement),
+    ],
+    "write",
+  );
+
+  return mapRowToAdmin(
+    {
+      id,
+      title: input.title,
+      slug: input.slug,
+      description: input.description,
+      price: input.price,
+      category: input.category,
+      gender: input.gender,
+      image_url: imageUrl,
+      images: JSON.stringify(images),
+      discount_percent: discountPercent,
+      in_stock: input.in_stock ? 1 : 0,
+      created_at: new Date().toISOString(),
+    },
+    variants,
+  );
+}
+
+/** Ürünün tüm varyantlarını verilen listeyle değiştirir (sil + yeniden ekle). */
+export async function replaceProductVariants(
+  productId: string,
+  variants: VariantInput[],
+): Promise<ProductVariant[]> {
+  await ensureSchema();
+  const rows: ProductVariant[] = variants.map((variant) => ({
+    id: randomUUID(),
+    product_id: productId,
+    variant_type: variant.variant_type,
+    color_name: variant.color_name,
+    color_hex: variant.color_hex,
+    size: variant.size,
+    price_adjustment: variant.price_adjustment,
+    stock: variant.stock,
+  }));
+
+  await db.batch(
+    [
+      {
+        sql: "delete from product_variants where product_id = ?",
+        args: [productId],
+      },
+      ...rows.map(variantInsertStatement),
+    ],
+    "write",
+  );
+
+  return rows;
 }
 
 /** Ürünün stok durumunu günceller. */
@@ -286,11 +436,17 @@ export async function updateProductDiscount(
   });
 }
 
-/** Ürünü siler. */
+/** Ürünü (ve varyantlarını) siler. */
 export async function deleteProduct(productId: string): Promise<void> {
   await ensureSchema();
-  await db.execute({
-    sql: "delete from products where id = ?",
-    args: [productId],
-  });
+  await db.batch(
+    [
+      {
+        sql: "delete from product_variants where product_id = ?",
+        args: [productId],
+      },
+      { sql: "delete from products where id = ?", args: [productId] },
+    ],
+    "write",
+  );
 }
